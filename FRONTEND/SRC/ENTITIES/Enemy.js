@@ -3,6 +3,7 @@ import { Entity } from './Entity.js';
 import { CONFIG } from '../config.js';
 import { Pickup } from './Pickup.js';
 import { assetManager } from '../SYSTEMS/AssetManager.js';
+import { SpriteRenderer } from '../SYSTEMS/SpriteRenderer.js';
 
 export class Enemy extends Entity {
   constructor(type, x, y, waveMultipliers = { hp: 1, damage: 1, speed: 1 }) {
@@ -254,28 +255,50 @@ export class Enemy extends Entity {
 
   draw(ctx) {
     if (!this.active) return;
-    ctx.save();
 
-    // Efecto de spawn
+    // Sombra en el piso
+    SpriteRenderer.drawShadow(ctx, this.x, this.y, this.radius);
+
+    ctx.save();
     if (this.state === 'SPAWN') {
       ctx.globalAlpha = 0.4 + Math.sin(Date.now() / 50) * 0.3;
     }
 
-    ctx.fillStyle = this.color;
-    ctx.shadowBlur = 10;
-    ctx.shadowColor = this.color;
-    ctx.beginPath();
-    ctx.arc(this.x, this.y, this.radius, 0, Math.PI * 2);
-    ctx.fill();
+    const spriteKey = `enemy_${this.type.toLowerCase()}`;
+    const isFacingLeft = Math.cos(this.angle) < 0;
+    
+    // Tamaños según arquetipo
+    const spriteSize = this.type === 'TANK' ? 72 : (this.type === 'SWARM' ? 26 : 42);
+
+    const drew = SpriteRenderer.drawEntitySprite({
+      ctx,
+      imageKey: spriteKey,
+      x: this.x,
+      y: this.y,
+      width: spriteSize,
+      height: spriteSize,
+      flipX: isFacingLeft,
+      yOffset: -4
+    });
+
+    // Fallback procedural con forma y brillo si no está el PNG
+    if (!drew) {
+      ctx.fillStyle = this.color;
+      ctx.shadowBlur = 10;
+      ctx.shadowColor = this.color;
+      ctx.beginPath();
+      ctx.arc(this.x, this.y, this.radius, 0, Math.PI * 2);
+      ctx.fill();
+    }
 
     // Barra de vida superior para Tanques
     if (this.type === 'TANK') {
       const barW = 44;
       const barH = 5;
       ctx.fillStyle = 'rgba(0,0,0,0.7)';
-      ctx.fillRect(this.x - barW / 2, this.y - this.radius - 12, barW, barH);
+      ctx.fillRect(this.x - barW / 2, this.y - this.radius - 16, barW, barH);
       ctx.fillStyle = '#ff0055';
-      ctx.fillRect(this.x - barW / 2, this.y - this.radius - 12, (this.hp / this.maxHp) * barW, barH);
+      ctx.fillRect(this.x - barW / 2, this.y - this.radius - 16, (this.hp / this.maxHp) * barW, barH);
     }
 
     ctx.restore();

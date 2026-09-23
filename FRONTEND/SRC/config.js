@@ -171,29 +171,36 @@ export const CONFIG = {
     PARTICLES: 1200
   },
 
-  // Rutas y manifiesto de Assets (Sprites & Audio)
+// Rutas y manifiesto de Assets
   ASSETS: {
-    USE_IMAGE_SPRITES: false, // Cambiar a true cuando cargues archivos .png
-    USE_AUDIO: false,         // Cambiar a true cuando cargues archivos de audio
+    USE_IMAGE_SPRITES: true, // <-- Activamos carga de imágenes
+    USE_AUDIO: false,
     SPRITES: {
-      player: {
-        src: 'assets/sprites/player/player_sheet.png',
-        frameW: 64, frameH: 64,
-        animations: {
-          idle:  { row: 0, frames: 4, speed: 0.15 },
-          walk:  { row: 1, frames: 6, speed: 0.10 },
-          attack:{ row: 2, frames: 2, speed: 0.08 },
-          hurt:  { row: 3, frames: 2, speed: 0.12 },
-          die:   { row: 4, frames: 6, speed: 0.15 }
-        }
-      }
+      // Suelo y entorno
+      tile_floor: 'assets/tiles/floor_metal.png',
+      tile_wall: 'assets/tiles/wall_tech.png',
+      obstacle_box: 'assets/tiles/obstacle_box.png',
+
+      // Jugador
+      player: 'assets/characters/player_walk.png',
+
+      // Enemigos
+      enemy_hunter: 'assets/enemies/hunter.png',
+      enemy_ranger: 'assets/enemies/ranger.png',
+      enemy_swarm: 'assets/enemies/swarm.png',
+      enemy_tank: 'assets/enemies/tank.png',
+      enemy_kamikaze: 'assets/enemies/kamikaze.png',
+
+      // Jefes
+      boss_goliath: 'assets/bosses/void_colossus.png',
+      boss_tempest: 'assets/bosses/tempest_core.png'
     },
     AUDIO: {
       bgm_arena: 'assets/audio/bgm/arena_theme.mp3',
       sfx_shoot: 'assets/audio/sfx/shoot.wav',
-      sfx_dash:  'assets/audio/sfx/dash.wav',
-      sfx_hit:   'assets/audio/sfx/hit.wav',
-      sfx_boom:  'assets/audio/sfx/explosion.wav'
+      sfx_dash: 'assets/audio/sfx/dash.wav',
+      sfx_hit: 'assets/audio/sfx/hit.wav',
+      sfx_boom: 'assets/audio/sfx/explosion.wav'
     }
   }
 };

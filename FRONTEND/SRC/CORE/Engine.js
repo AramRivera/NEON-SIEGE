@@ -313,19 +313,47 @@ export class Engine {
     this.ctx.restore();
   }
 
+  // En frontend/src/core/Engine.js
   _drawArena() {
-    this.ctx.fillStyle = '#060913';
-    this.ctx.fillRect(0, 0, CONFIG.ARENA.WIDTH, CONFIG.ARENA.HEIGHT);
+    const floorImg = assetManager.getImage('tile_floor');
+    if (floorImg) {
+      // Repite la placa metálica en toda la arena
+      const pattern = this.ctx.createPattern(floorImg, 'repeat');
+      this.ctx.fillStyle = pattern;
+      this.ctx.fillRect(0, 0, CONFIG.ARENA.WIDTH, CONFIG.ARENA.HEIGHT);
+    } else {
+      // Fondo oscuro por defecto
+      this.ctx.fillStyle = '#060913';
+      this.ctx.fillRect(0, 0, CONFIG.ARENA.WIDTH, CONFIG.ARENA.HEIGHT);
+    }
 
-    if (CONFIG.ARENA.SHOW_DEBUG_GRID) {
-      this.ctx.strokeStyle = 'rgba(0, 240, 255, 0.08)';
-      this.ctx.lineWidth = 1;
-      const step = CONFIG.ARENA.GRID_CELL_SIZE;
-      for (let x = 0; x <= CONFIG.ARENA.WIDTH; x += step) {
-        this.ctx.beginPath(); this.ctx.moveTo(x, 0); this.ctx.lineTo(x, CONFIG.ARENA.HEIGHT); this.ctx.stroke();
-      }
-      for (let y = 0; y <= CONFIG.ARENA.HEIGHT; y += step) {
-        this.ctx.beginPath(); this.ctx.moveTo(0, y); this.ctx.lineTo(CONFIG.ARENA.WIDTH, y); this.ctx.stroke();
+    // Bordes perimetrales con brillo neón
+    this.ctx.save();
+    this.ctx.strokeStyle = '#00f0ff';
+    this.ctx.lineWidth = 4;
+    this.ctx.shadowBlur = 18;
+    this.ctx.shadowColor = '#00f0ff';
+    this.ctx.strokeRect(0, 0, CONFIG.ARENA.WIDTH, CONFIG.ARENA.HEIGHT);
+    this.ctx.restore();
+
+    // Dibujar obstáculos con textura o bisel
+    const boxImg = assetManager.getImage('obstacle_box');
+    for (const obs of CONFIG.ARENA.OBSTACLES) {
+      if (boxImg) {
+        this.ctx.drawImage(boxImg, obs.x, obs.y, obs.w, obs.h);
+      } else {
+        this.ctx.fillStyle = '#101726';
+        this.ctx.fillRect(obs.x, obs.y, obs.w, obs.h);
+        this.ctx.strokeStyle = '#1e304f';
+        this.ctx.lineWidth = 2;
+        this.ctx.strokeRect(obs.x, obs.y, obs.w, obs.h);
+
+        this.ctx.fillStyle = '#00f0ff';
+        const cSize = 6;
+        this.ctx.fillRect(obs.x, obs.y, cSize, cSize);
+        this.ctx.fillRect(obs.x + obs.w - cSize, obs.y, cSize, cSize);
+        this.ctx.fillRect(obs.x, obs.y + obs.h - cSize, cSize, cSize);
+        this.ctx.fillRect(obs.x + obs.w - cSize, obs.y + obs.h - cSize, cSize, cSize);
       }
     }
 

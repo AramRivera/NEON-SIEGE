@@ -2,6 +2,7 @@
 import { Entity } from './Entity.js';
 import { CONFIG } from '../config.js';
 import { assetManager } from '../SYSTEMS/AssetManager.js';
+import { SpriteRenderer } from '../SYSTEMS/SpriteRenderer.js';
 
 export class Player extends Entity {
   constructor(x, y) {
@@ -210,37 +211,50 @@ export class Player extends Entity {
 
   draw(ctx) {
     if (!this.active) return;
-    ctx.save();
 
+    // 1. Sombra en el piso
+    SpriteRenderer.drawShadow(ctx, this.x, this.y, this.radius);
+
+    ctx.save();
     if (this.invulnerableTimer > 0 && Math.floor(Date.now() / 70) % 2 === 0) {
       ctx.globalAlpha = 0.35;
     }
 
-    ctx.translate(this.x, this.y);
-    ctx.rotate(this.aimAngle);
+    // 2. Intentar dibujar sprite si existe
+    // Se voltea horizontalmente (flipX) si apunta hacia la izquierda
+    const isFacingLeft = Math.abs(this.aimAngle) > Math.PI / 2;
+    const drew = SpriteRenderer.drawEntitySprite({
+      ctx,
+      imageKey: 'player',
+      x: this.x,
+      y: this.y,
+      width: 48,
+      height: 48,
+      flipX: isFacingLeft,
+      yOffset: -6 // Eleva el torso para dar perspectiva 2.5D
+    });
 
-    if (this.isDashing) {
-      ctx.shadowBlur = 25;
-      ctx.shadowColor = '#ffffff';
+    // 3. Fallback procedural si aún no agregaste player_walk.png
+    if (!drew) {
+      ctx.translate(this.x, this.y);
+      ctx.rotate(this.aimAngle);
+
+      ctx.shadowBlur = this.isDashing ? 25 : 12;
+      ctx.shadowColor = this.isDashing ? '#ffffff' : '#00f0ff';
+      ctx.fillStyle = this.isDashing ? '#ffffff' : '#00f0ff';
+      ctx.beginPath();
+      ctx.arc(0, 0, this.radius, 0, Math.PI * 2);
+      ctx.fill();
+
+      const weapon = CONFIG.WEAPONS[this.currentWeaponKey];
+      ctx.fillStyle = weapon.color;
+      ctx.fillRect(8, -3.5, 18, 7);
+
       ctx.fillStyle = '#ffffff';
-    } else {
-      ctx.shadowBlur = 12;
-      ctx.shadowColor = '#00f0ff';
-      ctx.fillStyle = '#00f0ff';
+      ctx.beginPath();
+      ctx.arc(0, 0, 7, 0, Math.PI * 2);
+      ctx.fill();
     }
-
-    ctx.beginPath();
-    ctx.arc(0, 0, this.radius, 0, Math.PI * 2);
-    ctx.fill();
-
-    const weapon = CONFIG.WEAPONS[this.currentWeaponKey];
-    ctx.fillStyle = weapon.color;
-    ctx.fillRect(8, -3.5, 18, 7);
-
-    ctx.fillStyle = '#ffffff';
-    ctx.beginPath();
-    ctx.arc(0, 0, 7, 0, Math.PI * 2);
-    ctx.fill();
 
     ctx.restore();
   }

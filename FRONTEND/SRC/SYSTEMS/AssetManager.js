@@ -8,12 +8,13 @@ export class AssetManager {
     this.isLoaded = false;
   }
 
+  // En frontend/src/systems/AssetManager.js
   async loadAll() {
     const promises = [];
 
     if (CONFIG.ASSETS.USE_IMAGE_SPRITES) {
-      for (const [key, meta] of Object.entries(CONFIG.ASSETS.SPRITES)) {
-        promises.push(this._loadImage(key, meta.src));
+      for (const [key, path] of Object.entries(CONFIG.ASSETS.SPRITES)) {
+        promises.push(this._loadImage(key, path));
       }
     }
 
@@ -25,7 +26,7 @@ export class AssetManager {
 
     await Promise.allSettled(promises);
     this.isLoaded = true;
-    console.log('[AssetManager] Carga de recursos finalizada.');
+    console.log(`[AssetManager] ${this.images.size} imágenes cargadas con éxito.`);
   }
 
   _loadImage(key, src) {

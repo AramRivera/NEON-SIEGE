@@ -4,10 +4,64 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Neon Siege: Arena Survival</title>
-  <link rel="stylesheet" href="/FRONTEND/CSS/style.css">
+  <link rel="stylesheet" href="./css/style.css">
 </head>
 <body>
-  <canvas id="gameCanvas"></canvas>
-  <script type="module" src="/FRONTEND/SRC/main.js"></script>
+  <div id="game-container">
+    <canvas id="gameCanvas"></canvas>
+
+    <!-- MODAL DE LEVEL UP (PAUSA EL JUEGO) -->
+    <div id="modal-levelup" class="modal-overlay">
+      <div class="modal-panel">
+        <h2 class="title-cyan">NIVEL NEURAL SUPERADO</h2>
+        <p class="subtitle">Selecciona una mejora de nanotecnología para el exoesqueleto:</p>
+        <div id="upgrades-container" class="upgrades-grid"></div>
+      </div>
+    </div>
+
+    <!-- MODAL DE GAME OVER / RANKING -->
+    <div id="modal-gameover" class="modal-overlay">
+      <div class="modal-panel">
+        <h2 class="title-pink">SEÑAL NEURAL PERDIDA</h2>
+        <p class="subtitle">El exoesqueleto ha sido destruido en la arena.</p>
+
+        <div class="score-summary">
+          <div>Puntuación: <span id="final-score" class="highlight-cyan">0</span></div>
+          <div>Oleada: <span id="final-wave" class="highlight-pink">0</span></div>
+          <div>Bajas: <span id="final-kills" class="highlight-cyan">0</span></div>
+          <div>Tiempo: <span id="final-time" class="highlight-pink">00:00</span></div>
+        </div>
+
+        <div id="save-form" class="form-row">
+          <input type="text" id="player-name-input" placeholder="Nombre de piloto" maxlength="16" autocomplete="off">
+          <button id="btn-save-score" class="btn-action">Guardar Record</button>
+        </div>
+
+        <div class="leaderboard-section">
+          <h3>TOP 10 PILOTOS (PostgreSQL)</h3>
+          <div class="table-wrapper">
+            <table>
+              <thead>
+                <tr>
+                  <th>#</th>
+                  <th>Piloto</th>
+                  <th>Score</th>
+                  <th>Oleada</th>
+                  <th>Bajas</th>
+                </tr>
+              </thead>
+              <tbody id="scores-tbody">
+                <tr><td colspan="5" style="text-align:center;">Cargando ranking...</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <button id="btn-restart" class="btn-action btn-cyan">Reiniciar Partida</button>
+      </div>
+    </div>
+  </div>
+
+  <script type="module" src="./src/main.js"></script>
 </body>
 </html>

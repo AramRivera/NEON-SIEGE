@@ -177,7 +177,7 @@ export const CONFIG = {
     USE_AUDIO: false,
     SPRITES: {
       // Suelo y entorno
-      tile_floor: 'assets/tiles/floor_metal.png',
+      tile_floor: 'ASSETS/tiles/floor_metal.png',
       tile_wall: 'assets/tiles/wall_tech.png',
       obstacle_box: 'assets/tiles/obstacle_box.png',
 

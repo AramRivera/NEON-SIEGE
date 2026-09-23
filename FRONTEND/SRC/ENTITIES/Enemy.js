@@ -3,7 +3,7 @@ import { Entity } from './Entity.js';
 import { CONFIG } from '../config.js';
 import { Pickup } from './Pickup.js';
 import { assetManager } from '../SYSTEMS/AssetManager.js';
-import { SpriteRenderer } from '../SYSTEMS/SpriteRenderer.js';
+import { SpriteRenderer } from '../SYSTEMS/SpriteRender.js';
 
 export class Enemy extends Entity {
   constructor(type, x, y, waveMultipliers = { hp: 1, damage: 1, speed: 1 }) {

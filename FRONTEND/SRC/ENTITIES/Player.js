@@ -2,7 +2,7 @@
 import { Entity } from './Entity.js';
 import { CONFIG } from '../config.js';
 import { assetManager } from '../SYSTEMS/AssetManager.js';
-import { SpriteRenderer } from '../SYSTEMS/SpriteRenderer.js';
+import { SpriteRenderer } from '../SYSTEMS/SpriteRender.js';
 
 export class Player extends Entity {
   constructor(x, y) {

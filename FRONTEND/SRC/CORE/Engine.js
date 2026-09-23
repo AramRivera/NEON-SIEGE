@@ -8,7 +8,10 @@ export class Engine {
   constructor(canvas) {
     this.canvas = canvas;
     this.ctx = canvas.getContext('2d');
-    this.resizeCanvas();
+    
+    // Forzar tamaño de píxeles reales del canvas
+    this.canvas.width = window.innerWidth || 800;
+    this.canvas.height = window.innerHeight || 600;
 
     this.input = new InputHandler(this.canvas);
     this.camera = new Camera(this.canvas.width, this.canvas.height);
@@ -17,8 +20,6 @@ export class Engine {
     this.lastTime = performance.now();
     this.isPaused = false;
     this.isRunning = false;
-
-    // Lista general de entidades registradas para el ciclo
     this.entities = [];
 
     window.addEventListener('resize', () => this.resizeCanvas());
@@ -27,19 +28,21 @@ export class Engine {
   resizeCanvas() {
     this.canvas.width = window.innerWidth;
     this.canvas.height = window.innerHeight;
-    if (this.camera) this.camera.resize(this.canvas.width, this.canvas.height);
+    if (this.camera) {
+      this.camera.resize(this.canvas.width, this.canvas.height);
+    }
   }
 
   start() {
     this.isRunning = true;
     this.lastTime = performance.now();
+    console.log(`[Engine] Arrancando canvas (${this.canvas.width}x${this.canvas.height}) en arena (${CONFIG.ARENA.WIDTH}x${CONFIG.ARENA.HEIGHT})`);
     requestAnimationFrame((time) => this._loop(time));
   }
 
   _loop(currentTime) {
     if (!this.isRunning) return;
 
-    // Cálculo estricto de Delta Time en segundos, clamp a 0.1s para evitar saltos en background
     const dt = Math.min(0.1, (currentTime - this.lastTime) / 1000);
     this.lastTime = currentTime;
 
@@ -52,10 +55,8 @@ export class Engine {
   }
 
   update(dt) {
-    // Sincronizar coordenadas del mouse con la cámara
     this.input.updateWorldCoordinates(this.camera.x, this.camera.y);
 
-    // Actualización de entidades registradas
     for (let i = this.entities.length - 1; i >= 0; i--) {
       const entity = this.entities[i];
       if (entity.active) {
@@ -70,12 +71,12 @@ export class Engine {
     this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
 
     this.ctx.save();
-    // Traslación según coordenadas de la cámara
-    this.ctx.translate(-Math.floor(this.camera.x), -Math.floor(this.camera.y));
+    const camX = Math.floor(this.camera.x || 0);
+    const camY = Math.floor(this.camera.y || 0);
+    this.ctx.translate(-camX, -camY);
 
     this._drawArena();
 
-    // Dibujar entidades
     for (const entity of this.entities) {
       if (entity.active) entity.draw(this.ctx);
     }
@@ -84,8 +85,12 @@ export class Engine {
   }
 
   _drawArena() {
-    // Cuadrícula cyberpunk de fondo
-    this.ctx.strokeStyle = '#0d1627';
+    // Fondo de la arena
+    this.ctx.fillStyle = '#070b14';
+    this.ctx.fillRect(0, 0, CONFIG.ARENA.WIDTH, CONFIG.ARENA.HEIGHT);
+
+    // Cuadrícula cyberpunk
+    this.ctx.strokeStyle = '#111d33';
     this.ctx.lineWidth = 1;
     const step = 80;
 
@@ -103,7 +108,7 @@ export class Engine {
       this.ctx.stroke();
     }
 
-    // Bordes de la arena con brillo neón
+    // Bordes exteriores de la arena
     this.ctx.strokeStyle = '#00f0ff';
     this.ctx.lineWidth = 4;
     this.ctx.shadowBlur = 15;
@@ -112,7 +117,7 @@ export class Engine {
     this.ctx.shadowBlur = 0;
 
     // Obstáculos
-    this.ctx.fillStyle = '#141d33';
+    this.ctx.fillStyle = '#162542';
     this.ctx.strokeStyle = '#00f0ff';
     this.ctx.lineWidth = 2;
     for (const obs of CONFIG.ARENA.OBSTACLES) {

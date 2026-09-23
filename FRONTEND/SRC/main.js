@@ -1,6 +1,6 @@
 // frontend/src/main.js
-import { Engine } from '/core/Engine.js';
-import { assetManager } from '/systems/AssetManager.js';
+import { Engine } from './CORE/Engine.js';
+import { assetManager } from './SYSTEMS/AssetManager.js';
 
 window.addEventListener('DOMContentLoaded', async () => {
   const canvas = document.getElementById('gameCanvas');

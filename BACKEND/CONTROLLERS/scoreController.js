@@ -1,5 +1,5 @@
 // backend/controllers/scoreController.js
-const db = require('/config/db');
+const db = require('../CONFIG/db.js');
 
 // POST /api/scores - Guardar partida
 exports.saveScore = async (req, res) => {

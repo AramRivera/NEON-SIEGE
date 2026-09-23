@@ -4,7 +4,7 @@
 export const CONFIG = {
   // Configuración del Servidor y API
   API: {
-    BASE_URL: 'http://localhost:3000/api'
+    BASE_URL: 'http://localhost:4000/api'
   },
 
 // Dimensiones y Físicas de la Arena

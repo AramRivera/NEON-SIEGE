@@ -2,6 +2,12 @@
   "name": "neon-siege-backend",
   "version": "1.0.0",
   "description": "API REST para Neon Siege con PostgreSQL",
+  "keywords": [
+    "start"
+  ],
+  "license": "ISC",
+  "author": "Aram y Saul",
+  "type": "commonjs",
   "main": "server.js",
   "scripts": {
     "start": "node server.js",

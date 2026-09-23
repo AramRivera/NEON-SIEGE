@@ -4,25 +4,25 @@ const cors = require('cors');
 const path = require('path');
 require('dotenv').config();
 
-const scoreRoutes = require('/routes/scoreRoutes');
+const scoreRoutes = require('./ROUTES/scoreRoutes');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-// Middlewares
+// 1. Middlewares base
 app.use(cors());
 app.use(express.json());
 
-// Servir frontend como estático
-app.use(express.static(path.join(__dirname, '../frontend')));
-
-// Rutas de API
+// 2. RUTAS DE LA API (Deben definirse ANTES de los estáticos)
 app.use('/api', scoreRoutes);
 
-// Healthcheck
+// 3. Healthcheck
 app.get('/health', (req, res) => {
   res.json({ status: 'OK', timestamp: new Date() });
 });
+
+// 4. Servir frontend como estático (DESPUÉS de las rutas de la API)
+app.use(express.static(path.join(__dirname, '../frontend')));
 
 app.listen(PORT, () => {
   console.log(`[Neon Siege Server] Servidor activo en http://localhost:${PORT}`);

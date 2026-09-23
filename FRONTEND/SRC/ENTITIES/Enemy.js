@@ -18,11 +18,17 @@ export class Enemy extends Entity {
     this.exp = base.exp;
     this.color = base.color;
 
-    // FSM: SPAWN -> SEARCH -> CHASE -> ATTACK -> RETREAT -> DEAD
+    // FSM lógica: SPAWN -> SEARCH -> CHASE -> ATTACK -> RETREAT -> DEAD
     this.state = 'SPAWN';
     this.stateTimer = 0.4; // Tiempo de materialización
     this.cooldownTimer = 0;
     this.angle = 0;
+
+    // Animación visual de spritesheets
+    this.animState = 'walk'; // 'walk' | 'attack'
+    this.frameIndex = 0;
+    this.frameTimer = 0;
+    this.hitTimer = 0; // Efecto de parpadeo blanco al ser impactado
 
     // Variables específicas según arquetipo
     this.chargeDir = { x: 0, y: 0 };
@@ -33,6 +39,7 @@ export class Enemy extends Entity {
     if (!this.active || this.state === 'SPAWN' || this.state === 'DEAD') return;
 
     this.hp -= amount;
+    this.hitTimer = 0.08; // Flash visual de impacto
     engine.particleSystem.emitSparks(this.x, this.y, this.color, 4);
 
     if (this.hp <= 0) {
@@ -47,30 +54,48 @@ export class Enemy extends Entity {
     engine.particleSystem.emitExplosion(this.x, this.y, this.color, 24);
     engine.onEnemyKilled(this);
 
-    // Dropeo de experiencia (siempre)
+    // Dropeo de experiencia garantizado
     engine.pickups.push(new Pickup(this.x, this.y, 'exp', this.exp));
 
-    // Probabilidad de soltar munición (18%) o curación (8%)
-    // Dentro de _onDeath(engine) en Enemy.js:
+    // Probabilidad de soltar munición o curación
     const rand = Math.random();
     if (rand < 0.14) {
-      // Dropear cartuchos de Escopeta (SG)
       engine.pickups.push(new Pickup(this.x + 8, this.y, 'ammo_shotgun', 16, 'SHOTGUN'));
     } else if (rand < 0.28) {
-      // Dropear célula de Plasma (PL)
       engine.pickups.push(new Pickup(this.x - 8, this.y, 'ammo_plasma', 8, 'ENERGY_BEAM'));
     } else if (rand < 0.36) {
-      // Dropear botiquín
       engine.pickups.push(new Pickup(this.x, this.y - 8, 'heal', 20));
     }
 
     assetManager.playSound('sfx_boom', 0.2);
   }
 
+  _updateAnimation(dt) {
+    const spriteKey = `enemy_${this.type.toLowerCase()}`;
+    const cfg = CONFIG.ASSETS.SPRITES[spriteKey];
+    const anim = cfg && cfg.animations ? cfg.animations[this.animState] : null;
+    const speed = anim ? anim.speed : 0.12;
+
+    this.frameTimer += dt;
+    if (this.frameTimer >= speed) {
+      this.frameTimer = 0;
+      this.frameIndex++;
+      if (anim && this.frameIndex >= anim.frames) {
+        this.frameIndex = 0;
+        if (this.animState === 'attack') {
+          this.animState = 'walk';
+        }
+      }
+    }
+  }
+
   update(dt, engine) {
     if (!this.active) return;
 
+    if (this.hitTimer > 0) this.hitTimer -= dt;
     if (this.cooldownTimer > 0) this.cooldownTimer -= dt;
+
+    this._updateAnimation(dt);
 
     const player = engine.player;
     const dx = player.x - this.x;
@@ -84,17 +109,19 @@ export class Enemy extends Entity {
         this.stateTimer -= dt;
         if (this.stateTimer <= 0) {
           this.state = 'CHASE';
+          this.animState = 'walk';
         }
         break;
 
       case 'SEARCH':
-        // Si el jugador está dentro de la arena, pasa a perseguir
         if (dist < 1500) {
           this.state = 'CHASE';
+          this.animState = 'walk';
         }
         break;
 
       case 'CHASE':
+        this.animState = 'walk';
         this._handleChase(dt, player, dist, dx, dy, engine);
         break;
 
@@ -103,7 +130,7 @@ export class Enemy extends Entity {
         break;
 
       case 'RETREAT':
-        // Ranger huyendo hacia atrás para mantener rango seguro
+        this.animState = 'walk';
         this.x -= Math.cos(this.angle) * (this.speed * 1.1) * dt;
         this.y -= Math.sin(this.angle) * (this.speed * 1.1) * dt;
         if (dist >= CONFIG.ENEMIES.RANGER.idealDist) {
@@ -116,7 +143,6 @@ export class Enemy extends Entity {
         break;
     }
 
-    // Físicas y límites
     this.clampToArena();
     this.resolveObstacleCollisions(CONFIG.ARENA.OBSTACLES);
   }
@@ -132,6 +158,8 @@ export class Enemy extends Entity {
         this.y += dirY * this.speed * dt;
         if (dist <= base.attackRange) {
           this.state = 'ATTACK';
+          this.animState = 'attack';
+          this.frameIndex = 0;
         }
         break;
 
@@ -141,6 +169,8 @@ export class Enemy extends Entity {
         } else if (dist <= base.shootRange) {
           if (this.cooldownTimer <= 0) {
             this.state = 'ATTACK';
+            this.animState = 'attack';
+            this.frameIndex = 0;
           }
         } else {
           this.x += dirX * this.speed * dt;
@@ -149,7 +179,6 @@ export class Enemy extends Entity {
         break;
 
       case 'SWARM': {
-        // Separación con vecinos (Boids / Flocking) usando SpatialGrid
         let sepX = 0;
         let sepY = 0;
         const neighbors = engine.spatialGrid.query(this.x, this.y, base.separationDist);
@@ -178,6 +207,8 @@ export class Enemy extends Entity {
         this.y += dirY * this.speed * dt;
         if (this.cooldownTimer <= 0 && dist < 320) {
           this.state = 'ATTACK';
+          this.animState = 'attack';
+          this.frameIndex = 0;
           this.stateTimer = base.chargeDuration;
           this.chargeDir = { x: dirX, y: dirY };
         }
@@ -188,6 +219,8 @@ export class Enemy extends Entity {
         this.y += dirY * this.speed * dt;
         if (dist <= base.triggerDist) {
           this.state = 'ATTACK';
+          this.animState = 'attack';
+          this.frameIndex = 0;
           this.primeTimer = base.primeTime;
         }
         break;
@@ -216,7 +249,7 @@ export class Enemy extends Entity {
             650,
             base.color,
             1,
-            true // isEnemy = true
+            true
           );
         }
         this.cooldownTimer = base.shootCooldown;
@@ -225,7 +258,6 @@ export class Enemy extends Entity {
       }
 
       case 'TANK':
-        // Embestida recta a gran velocidad
         this.x += this.chargeDir.x * base.chargeSpeed * dt;
         this.y += this.chargeDir.y * base.chargeSpeed * dt;
         this.stateTimer -= dt;
@@ -237,12 +269,12 @@ export class Enemy extends Entity {
         if (this.stateTimer <= 0) {
           this.cooldownTimer = base.chargeCooldown;
           this.state = 'CHASE';
+          this.animState = 'walk';
         }
         break;
 
       case 'KAMIKAZE':
         this.primeTimer -= dt;
-        // Parpadeo de sobrecarga antes de explotar
         this.color = Math.floor(Date.now() / 70) % 2 === 0 ? '#ffffff' : '#ff0055';
 
         if (this.primeTimer <= 0) {
@@ -262,7 +294,6 @@ export class Enemy extends Entity {
   draw(ctx) {
     if (!this.active) return;
 
-    // Sombra en el piso
     SpriteRenderer.drawShadow(ctx, this.x, this.y, this.radius);
 
     ctx.save();
@@ -270,43 +301,69 @@ export class Enemy extends Entity {
       ctx.globalAlpha = 0.4 + Math.sin(Date.now() / 50) * 0.3;
     }
 
+    if (this.hitTimer > 0) {
+      ctx.filter = 'brightness(2.2)';
+    }
+
     const spriteKey = `enemy_${this.type.toLowerCase()}`;
     const isFacingLeft = Math.cos(this.angle) < 0;
-    
-    // Tamaños según arquetipo
-    const spriteSize = this.type === 'TANK' ? 72 : (this.type === 'SWARM' ? 26 : 42);
+    const spriteSize = this.type === 'TANK' ? 72 : (this.type === 'SWARM' ? 28 : 46);
 
-    const drew = SpriteRenderer.drawEntitySprite({
+    // 1. Render animado si el asset configurado cuenta con spritesheet
+    let drew = SpriteRenderer.drawAnimatedSprite({
       ctx,
       imageKey: spriteKey,
+      animState: this.animState,
+      frameIndex: this.frameIndex,
       x: this.x,
       y: this.y,
       width: spriteSize,
       height: spriteSize,
+      angle: 0,
       flipX: isFacingLeft,
-      yOffset: -4
+      yOffset: -2
     });
 
-    // Fallback procedural con forma y brillo si no está el PNG
+    // 2. Si no es hoja animada, renderizar como sprite estático con rotación
     if (!drew) {
+      drew = SpriteRenderer.drawEntitySprite({
+        ctx,
+        imageKey: spriteKey,
+        x: this.x,
+        y: this.y,
+        width: spriteSize,
+        height: spriteSize,
+        flipX: isFacingLeft,
+        yOffset: -2
+      });
+    }
+
+    // 3. Fallback geométrico con estética neón si no existe imagen
+    if (!drew) {
+      ctx.translate(this.x, this.y);
+      ctx.rotate(this.angle);
+
       ctx.fillStyle = this.color;
       ctx.shadowBlur = 10;
       ctx.shadowColor = this.color;
       ctx.beginPath();
-      ctx.arc(this.x, this.y, this.radius, 0, Math.PI * 2);
+      ctx.arc(0, 0, this.radius, 0, Math.PI * 2);
       ctx.fill();
-    }
 
-    // Barra de vida superior para Tanques
-    if (this.type === 'TANK') {
-      const barW = 44;
-      const barH = 5;
-      ctx.fillStyle = 'rgba(0,0,0,0.7)';
-      ctx.fillRect(this.x - barW / 2, this.y - this.radius - 16, barW, barH);
-      ctx.fillStyle = '#ff0055';
-      ctx.fillRect(this.x - barW / 2, this.y - this.radius - 16, (this.hp / this.maxHp) * barW, barH);
+      ctx.fillStyle = '#ffffff';
+      ctx.fillRect(this.radius * 0.3, -2, this.radius * 0.5, 4);
     }
 
     ctx.restore();
+
+    // Barra de vida superior para Tanques
+    if (this.type === 'TANK' && this.state !== 'SPAWN') {
+      const barW = 44;
+      const barH = 5;
+      ctx.fillStyle = 'rgba(0,0,0,0.7)';
+      ctx.fillRect(this.x - barW / 2, this.y - this.radius - 14, barW, barH);
+      ctx.fillStyle = '#ff0055';
+      ctx.fillRect(this.x - barW / 2, this.y - this.radius - 14, (this.hp / this.maxHp) * barW, barH);
+    }
   }
 }

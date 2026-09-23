@@ -4,6 +4,7 @@ import { CONFIG } from '../config.js';
 import { Enemy } from './Enemy.js';
 import { Pickup } from './Pickup.js';
 import { assetManager } from '../SYSTEMS/AssetManager.js';
+import { SpriteRenderer } from '../SYSTEMS/SpriteRender.js';
 
 export class Boss extends Entity {
   constructor(kind, wave) {
@@ -19,15 +20,25 @@ export class Boss extends Entity {
     this.phase = 1; // 1: 100-60%, 2: 60-30%, 3: 30-0%
     this.actionTimer = 0;
     this.supportTimer = 0;
+    this.target = null;
+
+    // Animación visual de spritesheets
+    this.state = 'idle'; // 'idle' | 'walk' | 'attack' | 'special' | 'die'
+    this.frameIndex = 0;
+    this.frameTimer = 0;
+    this.hitTimer = 0; // Efecto de parpadeo visual al ser dañado
   }
 
   takeDamage(amount, engine) {
-    if (!this.active) return;
+    if (!this.active || this.state === 'die') return;
     this.hp -= amount;
+    this.hitTimer = 0.08;
     engine.particleSystem.emitSparks(this.x, this.y, '#ff0077', 8);
 
     if (this.hp <= 0) {
       this.hp = 0;
+      this.state = 'die';
+      this.frameIndex = 0;
       this.active = false;
       this._onDefeat(engine);
     }
@@ -37,20 +48,49 @@ export class Boss extends Entity {
     engine.particleSystem.emitExplosion(this.x, this.y, '#ffffff', 80);
     engine.onBossDefeated(this);
 
-    // Botín abundante
+    // Botín abundante al caer el jefe
     for (let i = 0; i < 6; i++) {
       const ox = (Math.random() - 0.5) * 80;
       const oy = (Math.random() - 0.5) * 80;
       engine.pickups.push(new Pickup(this.x + ox, this.y + oy, 'exp', 50));
     }
     engine.pickups.push(new Pickup(this.x, this.y, 'heal', 40));
-    engine.pickups.push(new Pickup(this.x, this.y + 20, 'ammo', 30));
+    engine.pickups.push(new Pickup(this.x, this.y + 20, 'ammo_shotgun', 32, 'SHOTGUN'));
+    engine.pickups.push(new Pickup(this.x, this.y - 20, 'ammo_plasma', 20, 'ENERGY_BEAM'));
 
     assetManager.playSound('sfx_boom', 0.5);
   }
 
+  _updateAnimation(dt) {
+    const spriteKey = this.kind === 'GOLIATH' ? 'boss_goliath' : 'boss_tempest';
+    const cfg = CONFIG.ASSETS.SPRITES[spriteKey];
+    const anim = cfg && cfg.animations ? cfg.animations[this.state] : null;
+    const speed = anim ? anim.speed : 0.15;
+
+    this.frameTimer += dt;
+    if (this.frameTimer >= speed) {
+      this.frameTimer = 0;
+      this.frameIndex++;
+      if (anim && this.frameIndex >= anim.frames) {
+        if (this.state === 'die') {
+          this.frameIndex = anim.frames - 1;
+        } else {
+          this.frameIndex = 0;
+          if (this.state === 'attack' || this.state === 'special') {
+            this.state = 'idle';
+          }
+        }
+      }
+    }
+  }
+
   update(dt, engine) {
-    if (!this.active) return;
+    if (!this.active && this.state !== 'die') return;
+
+    if (this.hitTimer > 0) this.hitTimer -= dt;
+    this._updateAnimation(dt);
+
+    if (!this.active) return; // Si fue derrotado, solo reproduce animación de muerte
 
     const hpRatio = this.hp / this.maxHp;
     if (hpRatio > 0.6) this.phase = 1;
@@ -61,6 +101,8 @@ export class Boss extends Entity {
     this.supportTimer += dt;
 
     const player = engine.player;
+    this.target = player;
+
     const dx = player.x - this.x;
     const dy = player.y - this.y;
     const dist = Math.hypot(dx, dy);
@@ -84,10 +126,16 @@ export class Boss extends Entity {
     const fCfg = CONFIG.BOSSES.GOLIATH.fases[`F${this.phase}`];
     this.x += (dx / dist) * fCfg.speed * dt;
     this.y += (dy / dist) * fCfg.speed * dt;
+    if (this.state !== 'attack' && this.state !== 'special') {
+      this.state = 'walk';
+    }
 
     // Disparo radial
     if (this.actionTimer >= fCfg.shootCooldown) {
       this.actionTimer = 0;
+      this.state = 'attack';
+      this.frameIndex = 0;
+
       const count = fCfg.burstCount;
       for (let i = 0; i < count; i++) {
         const a = (Math.PI * 2 / count) * i;
@@ -101,6 +149,9 @@ export class Boss extends Entity {
     // Fase 3: Invocación de Swarms
     if (fCfg.spawnSwarms && this.supportTimer >= fCfg.spawnFreq) {
       this.supportTimer = 0;
+      this.state = 'special';
+      this.frameIndex = 0;
+
       for (let i = 0; i < 3; i++) {
         const ox = (Math.random() - 0.5) * 80;
         const oy = (Math.random() - 0.5) * 80;
@@ -113,10 +164,16 @@ export class Boss extends Entity {
     const fCfg = CONFIG.BOSSES.TEMPEST.fases[`F${this.phase}`];
     this.x += (dx / dist) * fCfg.speed * dt;
     this.y += (dy / dist) * fCfg.speed * dt;
+    if (this.state !== 'attack' && this.state !== 'special') {
+      this.state = 'walk';
+    }
 
     // Teletransporte táctico
     if (fCfg.teleportRate > 0 && this.actionTimer >= fCfg.teleportRate) {
       this.actionTimer = 0;
+      this.state = 'special';
+      this.frameIndex = 0;
+
       engine.particleSystem.emitExplosion(this.x, this.y, '#9400d3', 30);
       this.x = Math.max(150, Math.min(CONFIG.ARENA.WIDTH - 150, player.x + (Math.random() - 0.5) * 500));
       this.y = Math.max(150, Math.min(CONFIG.ARENA.HEIGHT - 150, player.y + (Math.random() - 0.5) * 500));
@@ -126,6 +183,9 @@ export class Boss extends Entity {
     // Ráfagas en abanico
     if (this.supportTimer >= fCfg.laserCooldown) {
       this.supportTimer = 0;
+      this.state = 'attack';
+      this.frameIndex = 0;
+
       for (let k = 0; k < 5; k++) {
         const offset = (k - 2) * 0.18;
         const b = engine.enemyBulletsPool.get();
@@ -137,21 +197,61 @@ export class Boss extends Entity {
   }
 
   draw(ctx) {
-    if (!this.active) return;
+    if (!this.active && this.state !== 'die') return;
+
+    SpriteRenderer.drawShadow(ctx, this.x, this.y, this.radius * 1.3);
+
     ctx.save();
+    if (this.hitTimer > 0) {
+      ctx.filter = 'brightness(2.5)';
+    }
 
-    const color = this.phase === 3 ? '#ff0000' : (this.phase === 2 ? '#ff5500' : '#9400d3');
-    ctx.fillStyle = color;
-    ctx.shadowBlur = 25;
-    ctx.shadowColor = color;
-    ctx.beginPath();
-    ctx.arc(this.x, this.y, this.radius, 0, Math.PI * 2);
-    ctx.fill();
+    const spriteKey = this.kind === 'GOLIATH' ? 'boss_goliath' : 'boss_tempest';
+    const isFacingLeft = this.target ? (this.x > this.target.x) : false;
+    const bossSize = this.radius * 2.8;
 
-    // Anillo de fase
-    ctx.strokeStyle = '#ffffff';
-    ctx.lineWidth = 3;
-    ctx.stroke();
+    // 1. Renderizado de spritesheet animado
+    let drew = SpriteRenderer.drawAnimatedSprite({
+      ctx,
+      imageKey: spriteKey,
+      animState: this.state,
+      frameIndex: this.frameIndex,
+      x: this.x,
+      y: this.y,
+      width: bossSize,
+      height: bossSize,
+      angle: 0,
+      flipX: isFacingLeft
+    });
+
+    // 2. Sprite estático si no es hoja de animación
+    if (!drew) {
+      drew = SpriteRenderer.drawEntitySprite({
+        ctx,
+        imageKey: spriteKey,
+        x: this.x,
+        y: this.y,
+        width: bossSize,
+        height: bossSize,
+        flipX: isFacingLeft
+      });
+    }
+
+    // 3. Fallback geométrico con iluminación neón según la fase
+    if (!drew) {
+      const color = this.phase === 3 ? '#ff0000' : (this.phase === 2 ? '#ff5500' : '#9400d3');
+      ctx.fillStyle = color;
+      ctx.shadowBlur = 25;
+      ctx.shadowColor = color;
+      ctx.beginPath();
+      ctx.arc(this.x, this.y, this.radius, 0, Math.PI * 2);
+      ctx.fill();
+
+      // Anillo concéntrico de energía
+      ctx.strokeStyle = '#ffffff';
+      ctx.lineWidth = 3;
+      ctx.stroke();
+    }
 
     ctx.restore();
   }

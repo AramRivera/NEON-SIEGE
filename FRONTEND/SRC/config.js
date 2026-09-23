@@ -226,16 +226,77 @@ export const CONFIG = {
         }
       },
 
-      // Enemigos
-      enemy_hunter: './assets/enemies/hunter.png',
-      enemy_ranger: './assets/enemies/ranger.png',
-      enemy_swarm: './assets/enemies/swarm.png',
-      enemy_tank: './assets/enemies/tank.png',
-      enemy_kamikaze: './assets/enemies/kamikaze.png',
+      // frontend/src/config.js (dentro de ASSETS.SPRITES)
+      // Enemigos comunes (pueden ser hojas de 4 a 6 frames o PNG estático)
+      enemy_hunter: {
+        src: './assets/enemies/hunter.png',
+        frameW: 64,
+        frameH: 64,
+        animations: {
+          walk:   { row: 0, frames: 4, speed: 0.14 },
+          attack: { row: 1, frames: 3, speed: 0.10 }
+        }
+      },
+      enemy_ranger: {
+        src: './assets/enemies/ranger.png',
+        frameW: 64,
+        frameH: 64,
+        animations: {
+          walk:   { row: 0, frames: 4, speed: 0.15 },
+          attack: { row: 1, frames: 2, speed: 0.12 }
+        }
+      },
+      enemy_swarm: {
+        src: './assets/enemies/swarm.png',
+        frameW: 48,
+        frameH: 48,
+        animations: {
+          walk: { row: 0, frames: 4, speed: 0.08 }
+        }
+      },
+      enemy_tank: {
+        src: './assets/enemies/tank.png',
+        frameW: 96,
+        frameH: 96,
+        animations: {
+          walk:   { row: 0, frames: 4, speed: 0.20 },
+          attack: { row: 1, frames: 3, speed: 0.12 }
+        }
+      },
+      enemy_kamikaze: {
+        src: './assets/enemies/kamikaze.png',
+        frameW: 48,
+        frameH: 48,
+        animations: {
+          walk: { row: 0, frames: 4, speed: 0.06 }
+        }
+      },
 
-      // Jefes
-      boss_goliath: './assets/bosses/void_colossus.png',
-      boss_tempest: './assets/bosses/tempest_core.png'
+      // Jefe Final: Void Colossus (Estructura de alta resolución)
+      boss_goliath: {
+        src: './assets/bosses/void_colossus.png',
+        frameW: 256,
+        frameH: 204.8,
+        animations: {
+          idle:    { row: 0, frames: 4, speed: 0.20 },
+          walk:    { row: 1, frames: 6, speed: 0.12 },
+          attack:  { row: 2, frames: 4, speed: 0.10 },
+          special: { row: 3, frames: 4, speed: 0.08 },
+          die:     { row: 4, frames: 5, speed: 0.18 }
+        }
+      },
+      boss_tempest: {
+        src: './assets/bosses/void_tempest.png',
+        frameW: 256,
+        frameH: 204.8,
+        animations: {
+          idle:    { row: 0, frames: 4, speed: 0.20 },
+          walk:    { row: 1, frames: 6, speed: 0.12 },
+          attack:  { row: 2, frames: 4, speed: 0.10 },
+          special: { row: 3, frames: 4, speed: 0.08 },
+          die:     { row: 4, frames: 5, speed: 0.18 }
+        }
+      }
     },
     AUDIO: {
       bgm_arena: './assets/audio/bgm/arena_theme.mp3',

@@ -1,8 +1,6 @@
 // frontend/src/tools/MapEditor.js
 const TILE_SIZE = 64;
 
-// Definición de paleta de elementos (Suelos, Paredes, Marcadores de Entidad)
-// Dentro de PALETTE en frontend/src/tools/MapEditor.js
 const PALETTE = [
   { id: 'floor_metal', category: 'floor', name: 'Placa Metal', color: '#161e2e', hasCollision: false },
   { id: 'floor_grid',  category: 'floor', name: 'Rejilla Neón', color: '#0f293a', hasCollision: false },
@@ -25,11 +23,12 @@ class MapEditor {
     this.cols = Math.ceil(this.mapWidth / TILE_SIZE);
     this.rows = Math.ceil(this.mapHeight / TILE_SIZE);
 
-    // Matrices de datos
+    // Capas y Marcadores
     this.floorLayer = new Array(this.cols * this.rows).fill(null);
     this.wallLayer = new Array(this.cols * this.rows).fill(null);
     this.playerSpawn = { x: 1200, y: 900 };
     this.enemySpawners = [];
+    this.ammoSpawners = []; // <-- Lista de cajas de munición en el mapa
 
     this.selectedTool = PALETTE[0];
     this.camera = { x: 0, y: 0, isDragging: false, lastX: 0, lastY: 0 };
@@ -76,15 +75,14 @@ class MapEditor {
   setupListeners() {
     window.addEventListener('resize', () => { this.resizeCanvas(); this.render(); });
 
-    // Clics y arrastre sobre el canvas
     this.canvas.addEventListener('mousedown', (e) => {
-      if (e.button === 0) { // Clic izquierdo: Pintar
+      if (e.button === 0) {
         this.isPainting = true;
         this.applyToolAtCursor(e.clientX, e.clientY);
-      } else if (e.button === 2) { // Clic derecho: Borrar
+      } else if (e.button === 2) {
         this.isErasing = true;
         this.eraseAtCursor(e.clientX, e.clientY);
-      } else if (e.button === 1) { // Botón central: Arrastrar cámara
+      } else if (e.button === 1) {
         this.camera.isDragging = true;
         this.camera.lastX = e.clientX;
         this.camera.lastY = e.clientY;
@@ -99,8 +97,10 @@ class MapEditor {
       const worldX = Math.floor(mouseX + this.camera.x);
       const worldY = Math.floor(mouseY + this.camera.y);
 
-      document.getElementById('info-bar').innerText = 
-        `Cámara: X:${Math.floor(this.camera.x)} Y:${Math.floor(this.camera.y)} | Mundo: X:${worldX} Y:${worldY} | Herramienta: ${this.selectedTool.name}`;
+      const info = document.getElementById('info-bar');
+      if (info) {
+        info.innerText = `Cámara: X:${Math.floor(this.camera.x)} Y:${Math.floor(this.camera.y)} | Mundo: X:${worldX} Y:${worldY} | Herramienta: ${this.selectedTool.name}`;
+      }
 
       if (this.camera.isDragging) {
         this.camera.x -= (e.clientX - this.camera.lastX);
@@ -123,7 +123,6 @@ class MapEditor {
 
     this.canvas.addEventListener('contextmenu', (e) => e.preventDefault());
 
-    // Botones de acciones
     document.getElementById('btn-resize').onclick = () => {
       const w = parseInt(document.getElementById('inp-width').value, 10);
       const h = parseInt(document.getElementById('inp-height').value, 10);
@@ -136,11 +135,11 @@ class MapEditor {
       if (confirm('¿Vaciar todos los obstáculos y marcadores del mapa?')) {
         this.wallLayer.fill(null);
         this.enemySpawners = [];
+        this.ammoSpawners = [];
         this.render();
       }
     };
 
-    // Importar
     const fileInput = document.getElementById('file-input');
     document.getElementById('btn-import').onclick = () => fileInput.click();
     fileInput.onchange = (e) => {
@@ -162,18 +161,22 @@ class MapEditor {
     const col = Math.floor(worldX / TILE_SIZE);
     const row = Math.floor(worldY / TILE_SIZE);
     const index = row * this.cols + col;
+    const centerX = col * TILE_SIZE + TILE_SIZE / 2;
+    const centerY = row * TILE_SIZE + TILE_SIZE / 2;
 
     if (this.selectedTool.category === 'floor') {
       this.floorLayer[index] = this.selectedTool.id;
     } else if (this.selectedTool.category === 'wall') {
       this.wallLayer[index] = this.selectedTool.id;
     } else if (this.selectedTool.isPlayerSpawn) {
-      this.playerSpawn = { x: col * TILE_SIZE + TILE_SIZE / 2, y: row * TILE_SIZE + TILE_SIZE / 2 };
+      this.playerSpawn = { x: centerX, y: centerY };
     } else if (this.selectedTool.isEnemySpawn) {
-      const ex = col * TILE_SIZE + TILE_SIZE / 2;
-      const ey = row * TILE_SIZE + TILE_SIZE / 2;
-      if (!this.enemySpawners.some(s => s.x === ex && s.y === ey)) {
-        this.enemySpawners.push({ x: ex, y: ey });
+      if (!this.enemySpawners.some(s => s.x === centerX && s.y === centerY)) {
+        this.enemySpawners.push({ x: centerX, y: centerY });
+      }
+    } else if (this.selectedTool.isAmmoSpawn) { // <-- Lógica para colocar caja de balas
+      if (!this.ammoSpawners.some(s => s.x === centerX && s.y === centerY)) {
+        this.ammoSpawners.push({ x: centerX, y: centerY, amount: 20 });
       }
     }
     this.render();
@@ -187,11 +190,12 @@ class MapEditor {
     const col = Math.floor(worldX / TILE_SIZE);
     const row = Math.floor(worldY / TILE_SIZE);
     const index = row * this.cols + col;
+    const centerX = col * TILE_SIZE + TILE_SIZE / 2;
+    const centerY = row * TILE_SIZE + TILE_SIZE / 2;
 
     this.wallLayer[index] = null;
-    const ex = col * TILE_SIZE + TILE_SIZE / 2;
-    const ey = row * TILE_SIZE + TILE_SIZE / 2;
-    this.enemySpawners = this.enemySpawners.filter(s => s.x !== ex || s.y !== ey);
+    this.enemySpawners = this.enemySpawners.filter(s => s.x !== centerX || s.y !== centerY);
+    this.ammoSpawners = this.ammoSpawners.filter(s => s.x !== centerX || s.y !== centerY); // <-- Borrar balas
     this.render();
   }
 
@@ -203,11 +207,11 @@ class MapEditor {
     this.floorLayer = new Array(this.cols * this.rows).fill('floor_metal');
     this.wallLayer = new Array(this.cols * this.rows).fill(null);
     this.enemySpawners = [];
+    this.ammoSpawners = [];
     this.render();
   }
 
   generateMapData() {
-    // Convierte las paredes en el arreglo AABB optimizado que consume el motor de colisiones
     const obstacles = [];
     for (let r = 0; r < this.rows; r++) {
       for (let c = 0; c < this.cols; c++) {
@@ -231,6 +235,7 @@ class MapEditor {
       tileSize: TILE_SIZE,
       playerSpawn: this.playerSpawn,
       enemySpawners: this.enemySpawners,
+      ammoSpawners: this.ammoSpawners, // <-- Incluido en la exportación
       obstacles: obstacles
     };
   }
@@ -275,6 +280,7 @@ class MapEditor {
 
       this.playerSpawn = data.playerSpawn || { x: 1200, y: 900 };
       this.enemySpawners = data.enemySpawners || [];
+      this.ammoSpawners = data.ammoSpawners || []; // <-- Importación recuperada
 
       document.getElementById('inp-width').value = this.mapWidth;
       document.getElementById('inp-height').value = this.mapHeight;
@@ -292,7 +298,7 @@ class MapEditor {
     this.ctx.save();
     this.ctx.translate(-Math.floor(this.camera.x), -Math.floor(this.camera.y));
 
-    // 1. Dibujar Capa Suelo
+    // 1. Suelos
     for (let r = 0; r < this.rows; r++) {
       for (let c = 0; c < this.cols; c++) {
         const idx = r * this.cols + c;
@@ -308,7 +314,7 @@ class MapEditor {
       }
     }
 
-    // 2. Dibujar Capa Paredes / Obstáculos
+    // 2. Muros
     for (let r = 0; r < this.rows; r++) {
       for (let c = 0; c < this.cols; c++) {
         const wallId = this.wallLayer[r * this.cols + c];
@@ -322,29 +328,46 @@ class MapEditor {
       }
     }
 
-    // 3. Dibujar Spawnpoints de Enemigos
+    // 3. Portales Enemigos
     for (const spawner of this.enemySpawners) {
       this.ctx.fillStyle = '#ffaa00';
       this.ctx.beginPath();
       this.ctx.arc(spawner.x, spawner.y, 16, 0, Math.PI * 2);
       this.ctx.fill();
       this.ctx.fillStyle = '#000';
-      this.ctx.font = '10px monospace';
+      this.ctx.font = 'bold 9px monospace';
       this.ctx.textAlign = 'center';
       this.ctx.textBaseline = 'middle';
       this.ctx.fillText('PORTAL', spawner.x, spawner.y);
     }
 
-    // 4. Dibujar Spawnpoint del Jugador
+    // 4. Cajas de Munición (Dorado Neón)
+    for (const ammo of this.ammoSpawners) {
+      this.ctx.fillStyle = '#ffd700';
+      this.ctx.fillRect(ammo.x - 14, ammo.y - 10, 28, 20);
+      this.ctx.strokeStyle = '#ffffff';
+      this.ctx.lineWidth = 1.5;
+      this.ctx.strokeRect(ammo.x - 14, ammo.y - 10, 28, 20);
+
+      this.ctx.fillStyle = '#000';
+      this.ctx.font = 'bold 9px monospace';
+      this.ctx.textAlign = 'center';
+      this.ctx.textBaseline = 'middle';
+      this.ctx.fillText('AMMO', ammo.x, ammo.y);
+    }
+
+    // 5. Spawnpoint Jugador
     this.ctx.fillStyle = '#39ff14';
     this.ctx.beginPath();
     this.ctx.arc(this.playerSpawn.x, this.playerSpawn.y, 20, 0, Math.PI * 2);
     this.ctx.fill();
     this.ctx.fillStyle = '#000';
     this.ctx.font = 'bold 11px monospace';
+    this.ctx.textAlign = 'center';
+    this.ctx.textBaseline = 'middle';
     this.ctx.fillText('PLAYER', this.playerSpawn.x, this.playerSpawn.y);
 
-    // 5. Marco límite de la Arena
+    // 6. Borde Arena
     this.ctx.strokeStyle = '#00f0ff';
     this.ctx.lineWidth = 4;
     this.ctx.strokeRect(0, 0, this.mapWidth, this.mapHeight);

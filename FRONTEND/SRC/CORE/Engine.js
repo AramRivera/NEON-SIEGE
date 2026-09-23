@@ -3,13 +3,16 @@ import { CONFIG } from '../config.js';
 import { InputHandler } from './Input.js';
 import { Camera } from './Camera.js';
 import { SpatialGrid } from './SpatialGrid.js';
+import { ObjectPool } from '../SYSTEMS/ObjectPool.js';
+import { ParticleSystem } from '../SYSTEMS/ParticleSystem.js';
+import { Projectile } from '../ENTITIES/Projectile.js';
+import { Player } from '../ENTITIES/Player.js';
 
 export class Engine {
   constructor(canvas) {
     this.canvas = canvas;
     this.ctx = canvas.getContext('2d');
     
-    // Forzar tamaño de píxeles reales del canvas
     this.canvas.width = window.innerWidth || 800;
     this.canvas.height = window.innerHeight || 600;
 
@@ -17,10 +20,17 @@ export class Engine {
     this.camera = new Camera(this.canvas.width, this.canvas.height);
     this.spatialGrid = new SpatialGrid(CONFIG.ARENA.WIDTH, CONFIG.ARENA.HEIGHT, CONFIG.ARENA.GRID_CELL_SIZE);
 
+    // Sistemas y Pools
+    this.particleSystem = new ParticleSystem();
+    this.playerBulletsPool = new ObjectPool(() => new Projectile(), CONFIG.POOLS.PLAYER_BULLETS);
+    this.enemyBulletsPool = new ObjectPool(() => new Projectile(), CONFIG.POOLS.ENEMY_BULLETS);
+
+    // Jugador (centrado en la arena al inicio)
+    this.player = new Player(CONFIG.ARENA.WIDTH / 2, CONFIG.ARENA.HEIGHT / 2);
+
     this.lastTime = performance.now();
     this.isPaused = false;
     this.isRunning = false;
-    this.entities = [];
 
     window.addEventListener('resize', () => this.resizeCanvas());
   }
@@ -36,7 +46,7 @@ export class Engine {
   start() {
     this.isRunning = true;
     this.lastTime = performance.now();
-    console.log(`[Engine] Arrancando canvas (${this.canvas.width}x${this.canvas.height}) en arena (${CONFIG.ARENA.WIDTH}x${CONFIG.ARENA.HEIGHT})`);
+    console.log('[Neon Siege] Motor y Jugador inicializados.');
     requestAnimationFrame((time) => this._loop(time));
   }
 
@@ -55,16 +65,23 @@ export class Engine {
   }
 
   update(dt) {
+    // 1. Sincronizar coordenadas del mouse con la posición del mundo
     this.input.updateWorldCoordinates(this.camera.x, this.camera.y);
 
-    for (let i = this.entities.length - 1; i >= 0; i--) {
-      const entity = this.entities[i];
-      if (entity.active) {
-        entity.update(dt, this);
-      } else {
-        this.entities.splice(i, 1);
-      }
+    // 2. Actualizar Jugador
+    this.player.update(dt, this);
+
+    // 3. Cámara siguiendo suavemente al jugador
+    this.camera.follow(this.player.x, this.player.y);
+
+    // 4. Actualizar Proyectiles activos del Jugador contra obstáculos
+    const activeBullets = this.playerBulletsPool.getActive();
+    for (let i = 0; i < activeBullets.length; i++) {
+      activeBullets[i].update(dt, CONFIG.ARENA.OBSTACLES);
     }
+
+    // 5. Actualizar Partículas
+    this.particleSystem.update(dt);
   }
 
   render() {
@@ -75,54 +92,63 @@ export class Engine {
     const camY = Math.floor(this.camera.y || 0);
     this.ctx.translate(-camX, -camY);
 
+    // Dibujar Arena inmersiva
     this._drawArena();
 
-    for (const entity of this.entities) {
-      if (entity.active) entity.draw(this.ctx);
+    // Dibujar Proyectiles
+    const activeBullets = this.playerBulletsPool.getActive();
+    for (let i = 0; i < activeBullets.length; i++) {
+      activeBullets[i].draw(this.ctx);
     }
+
+    // Dibujar Jugador
+    this.player.draw(this.ctx);
+
+    // Dibujar Partículas
+    this.particleSystem.draw(this.ctx);
 
     this.ctx.restore();
   }
 
   _drawArena() {
-    // Fondo de la arena
-    this.ctx.fillStyle = '#070b14';
+    this.ctx.fillStyle = '#060913';
     this.ctx.fillRect(0, 0, CONFIG.ARENA.WIDTH, CONFIG.ARENA.HEIGHT);
 
-    // Cuadrícula cyberpunk
-    this.ctx.strokeStyle = '#111d33';
-    this.ctx.lineWidth = 1;
-    const step = 80;
-
-    for (let x = 0; x <= CONFIG.ARENA.WIDTH; x += step) {
-      this.ctx.beginPath();
-      this.ctx.moveTo(x, 0);
-      this.ctx.lineTo(x, CONFIG.ARENA.HEIGHT);
-      this.ctx.stroke();
+    if (CONFIG.ARENA.SHOW_DEBUG_GRID) {
+      this.ctx.strokeStyle = 'rgba(0, 240, 255, 0.08)';
+      this.ctx.lineWidth = 1;
+      const step = CONFIG.ARENA.GRID_CELL_SIZE;
+      for (let x = 0; x <= CONFIG.ARENA.WIDTH; x += step) {
+        this.ctx.beginPath(); this.ctx.moveTo(x, 0); this.ctx.lineTo(x, CONFIG.ARENA.HEIGHT); this.ctx.stroke();
+      }
+      for (let y = 0; y <= CONFIG.ARENA.HEIGHT; y += step) {
+        this.ctx.beginPath(); this.ctx.moveTo(0, y); this.ctx.lineTo(CONFIG.ARENA.WIDTH, y); this.ctx.stroke();
+      }
     }
 
-    for (let y = 0; y <= CONFIG.ARENA.HEIGHT; y += step) {
-      this.ctx.beginPath();
-      this.ctx.moveTo(0, y);
-      this.ctx.lineTo(CONFIG.ARENA.WIDTH, y);
-      this.ctx.stroke();
-    }
-
-    // Bordes exteriores de la arena
+    // Bordes neón
+    this.ctx.save();
     this.ctx.strokeStyle = '#00f0ff';
     this.ctx.lineWidth = 4;
-    this.ctx.shadowBlur = 15;
+    this.ctx.shadowBlur = 18;
     this.ctx.shadowColor = '#00f0ff';
     this.ctx.strokeRect(0, 0, CONFIG.ARENA.WIDTH, CONFIG.ARENA.HEIGHT);
-    this.ctx.shadowBlur = 0;
+    this.ctx.restore();
 
-    // Obstáculos
-    this.ctx.fillStyle = '#162542';
-    this.ctx.strokeStyle = '#00f0ff';
-    this.ctx.lineWidth = 2;
+    // Obstáculos ambientales
     for (const obs of CONFIG.ARENA.OBSTACLES) {
+      this.ctx.fillStyle = '#101726';
       this.ctx.fillRect(obs.x, obs.y, obs.w, obs.h);
+      this.ctx.strokeStyle = '#1e304f';
+      this.ctx.lineWidth = 2;
       this.ctx.strokeRect(obs.x, obs.y, obs.w, obs.h);
+
+      this.ctx.fillStyle = '#00f0ff';
+      const cSize = 6;
+      this.ctx.fillRect(obs.x, obs.y, cSize, cSize);
+      this.ctx.fillRect(obs.x + obs.w - cSize, obs.y, cSize, cSize);
+      this.ctx.fillRect(obs.x, obs.y + obs.h - cSize, cSize, cSize);
+      this.ctx.fillRect(obs.x + obs.w - cSize, obs.y + obs.h - cSize, cSize, cSize);
     }
   }
 }

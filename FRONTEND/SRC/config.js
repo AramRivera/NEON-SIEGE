@@ -7,11 +7,12 @@ export const CONFIG = {
     BASE_URL: 'http://localhost:3000/api'
   },
 
-  // Dimensiones y Físicas de la Arena
+// Dimensiones y Físicas de la Arena
   ARENA: {
     WIDTH: 2400,
     HEIGHT: 1800,
     GRID_CELL_SIZE: 120, // Resolución del Spatial Hash Grid
+    SHOW_DEBUG_GRID: false, // <-- En false para gráficos inmersivos limpios
     OBSTACLES: [
       { x: 450, y: 450, w: 150, h: 150 },
       { x: 1800, y: 450, w: 150, h: 150 },

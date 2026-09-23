@@ -51,11 +51,17 @@ export class Enemy extends Entity {
     engine.pickups.push(new Pickup(this.x, this.y, 'exp', this.exp));
 
     // Probabilidad de soltar munición (18%) o curación (8%)
+    // Dentro de _onDeath(engine) en Enemy.js:
     const rand = Math.random();
-    if (rand < 0.18) {
-      engine.pickups.push(new Pickup(this.x + 8, this.y, 'ammo', 12));
-    } else if (rand < 0.26) {
-      engine.pickups.push(new Pickup(this.x - 8, this.y, 'heal', 20));
+    if (rand < 0.14) {
+      // Dropear cartuchos de Escopeta (SG)
+      engine.pickups.push(new Pickup(this.x + 8, this.y, 'ammo_shotgun', 16, 'SHOTGUN'));
+    } else if (rand < 0.28) {
+      // Dropear célula de Plasma (PL)
+      engine.pickups.push(new Pickup(this.x - 8, this.y, 'ammo_plasma', 8, 'ENERGY_BEAM'));
+    } else if (rand < 0.36) {
+      // Dropear botiquín
+      engine.pickups.push(new Pickup(this.x, this.y - 8, 'heal', 20));
     }
 
     assetManager.playSound('sfx_boom', 0.2);

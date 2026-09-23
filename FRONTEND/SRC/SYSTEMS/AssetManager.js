@@ -8,13 +8,16 @@ export class AssetManager {
     this.isLoaded = false;
   }
 
-  // En frontend/src/systems/AssetManager.js
   async loadAll() {
     const promises = [];
 
     if (CONFIG.ASSETS.USE_IMAGE_SPRITES) {
-      for (const [key, path] of Object.entries(CONFIG.ASSETS.SPRITES)) {
-        promises.push(this._loadImage(key, path));
+      for (const [key, value] of Object.entries(CONFIG.ASSETS.SPRITES)) {
+        // Extraer la ruta si es string o si viene dentro de un objeto { src: '...' }
+        const src = typeof value === 'string' ? value : (value && value.src);
+        if (src) {
+          promises.push(this._loadImage(key, src));
+        }
       }
     }
 
@@ -26,7 +29,7 @@ export class AssetManager {
 
     await Promise.allSettled(promises);
     this.isLoaded = true;
-    console.log(`[AssetManager] ${this.images.size} imágenes cargadas con éxito.`);
+    console.log(`[AssetManager] ${this.images.size} imágenes cargadas en memoria.`);
   }
 
   _loadImage(key, src) {
@@ -38,7 +41,7 @@ export class AssetManager {
         resolve(img);
       };
       img.onerror = () => {
-        console.warn(`[AssetManager] No se pudo cargar imagen "${key}" (${src}). Se usará renderizado procedural.`);
+        console.warn(`[AssetManager] No se pudo cargar imagen "${key}" (${src}). Usando fallback procedural.`);
         resolve(null);
       };
     });
@@ -53,7 +56,6 @@ export class AssetManager {
         resolve(audio);
       };
       audio.onerror = () => {
-        console.warn(`[AssetManager] No se pudo cargar audio "${key}" (${src}).`);
         resolve(null);
       };
     });

@@ -14,21 +14,22 @@ export class Player extends Entity {
     this.maxEnergy = CONFIG.PLAYER.MAX_ENERGY;
     this.energy = this.maxEnergy;
 
-    // Inventario de Munición por arma
     this.ammo = {
       PISTOL: CONFIG.WEAPONS.PISTOL.startAmmo,
       SHOTGUN: CONFIG.WEAPONS.SHOTGUN.startAmmo,
       ENERGY_BEAM: CONFIG.WEAPONS.ENERGY_BEAM.startAmmo
     };
 
-    // Nivel y progresión
+    this.weaponModifiers = {
+      PISTOL:      { fireRateMult: 1.0, dmgMult: 1.0 },
+      SHOTGUN:     { fireRateMult: 1.0, dmgMult: 1.0 },
+      ENERGY_BEAM: { fireRateMult: 1.0, dmgMult: 1.0 }
+    };
+
     this.level = 1;
     this.exp = 0;
     this.expNext = 50;
     this.magnetRadius = CONFIG.PLAYER.BASE_MAGNET_RADIUS;
-
-    this.dmgMultiplier = 1.0;
-    this.fireRateMultiplier = 1.0;
     this.extraPellets = 0;
 
     this.currentWeaponKey = 'PISTOL';
@@ -40,23 +41,16 @@ export class Player extends Entity {
     this.dashDir = { x: 0, y: 0 };
     this.invulnerableTimer = 0;
 
+    // FSM de animaciones
     this.state = 'idle';
+    this.frameIndex = 0;
+    this.frameTimer = 0;
   }
 
-  // Método para recargar munición al recoger cajas
-  addAmmo(weaponKey = null, amount = null) {
-    if (weaponKey && CONFIG.WEAPONS[weaponKey]) {
-      const max = CONFIG.WEAPONS[weaponKey].maxAmmo;
-      const add = amount || CONFIG.WEAPONS[weaponKey].ammoPerPickup || 10;
-      this.ammo[weaponKey] = Math.min(max, this.ammo[weaponKey] + add);
-    } else {
-      // Recarga general para todas las armas que no sean infinitas
-      ['SHOTGUN', 'ENERGY_BEAM'].forEach((wKey) => {
-        const max = CONFIG.WEAPONS[wKey].maxAmmo;
-        const add = CONFIG.WEAPONS[wKey].ammoPerPickup || 10;
-        this.ammo[wKey] = Math.min(max, this.ammo[wKey] + add);
-      });
-    }
+  addSpecificAmmo(weaponKey, amount) {
+    if (!this.ammo[weaponKey] || this.ammo[weaponKey] === Infinity) return;
+    const max = CONFIG.WEAPONS[weaponKey].maxAmmo;
+    this.ammo[weaponKey] = Math.min(max, this.ammo[weaponKey] + amount);
   }
 
   takeDamage(amount, particleSystem) {
@@ -64,6 +58,7 @@ export class Player extends Entity {
     this.hp -= amount;
     this.invulnerableTimer = CONFIG.PLAYER.INVULNERABLE_TIME;
     this.state = 'hurt';
+    this.frameIndex = 0;
 
     if (particleSystem) particleSystem.emitSparks(this.x, this.y, '#00f0ff', 14);
     assetManager.playSound('sfx_hit', 0.4);
@@ -72,6 +67,7 @@ export class Player extends Entity {
       this.hp = 0;
       this.active = false;
       this.state = 'die';
+      this.frameIndex = 0;
       if (particleSystem) particleSystem.emitExplosion(this.x, this.y, '#00f0ff', 40);
     }
   }
@@ -97,11 +93,10 @@ export class Player extends Entity {
 
   shoot(bulletsPool, particleSystem) {
     const weapon = CONFIG.WEAPONS[this.currentWeaponKey];
+    const mods = this.weaponModifiers[this.currentWeaponKey];
 
-    // Verificación de munición
     if (this.ammo[this.currentWeaponKey] <= 0) {
       if (particleSystem) {
-        // Chispa pequeña que avisa visualmente "clic en seco"
         const tipX = this.x + Math.cos(this.aimAngle) * (this.radius + 14);
         const tipY = this.y + Math.sin(this.aimAngle) * (this.radius + 14);
         particleSystem.emitSparks(tipX, tipY, '#ffaa00', 2);
@@ -109,20 +104,18 @@ export class Player extends Entity {
       return;
     }
 
-    // Verificación de energía
     if (this.energy < weapon.energyCost) return;
 
-    // Consumir recursos
     this.energy -= weapon.energyCost;
     if (this.ammo[this.currentWeaponKey] !== Infinity) {
       this.ammo[this.currentWeaponKey]--;
     }
 
-    this.shootCooldown = weapon.cadence / this.fireRateMultiplier;
+    this.shootCooldown = weapon.cadence / mods.fireRateMult;
     this.state = 'attack';
+    this.frameIndex = 0;
 
-    const totalProjectiles = weapon.pellets + this.extraPellets;
-
+    const totalProjectiles = weapon.pellets + (this.currentWeaponKey === 'SHOTGUN' ? this.extraPellets : 0);
     for (let i = 0; i < totalProjectiles; i++) {
       const spreadOffset = (Math.random() - 0.5) * weapon.spread;
       const finalAngle = this.aimAngle + spreadOffset;
@@ -134,7 +127,7 @@ export class Player extends Entity {
           this.y,
           finalAngle,
           weapon.bulletSpeed,
-          weapon.damage * this.dmgMultiplier,
+          weapon.damage * mods.dmgMult,
           weapon.range,
           weapon.color,
           weapon.penetration,
@@ -163,7 +156,38 @@ export class Player extends Entity {
     return false;
   }
 
+  _updateAnimation(dt) {
+    let sheetKey = 'player_pistol';
+    if (this.currentWeaponKey === 'SHOTGUN') sheetKey = 'player_shotgun';
+    else if (this.currentWeaponKey === 'ENERGY_BEAM') sheetKey = 'player_energy_beam';
+
+    const sheetConfig = CONFIG.ASSETS.SPRITES[sheetKey];
+    const anim = sheetConfig && sheetConfig.animations ? sheetConfig.animations[this.state] : null;
+    const speed = anim ? anim.speed : 0.12;
+
+    this.frameTimer += dt;
+    if (this.frameTimer >= speed) {
+      this.frameTimer = 0;
+      this.frameIndex++;
+
+      if (anim && this.frameIndex >= anim.frames) {
+        if (this.state === 'die') {
+          this.frameIndex = anim.frames - 1;
+        } else if (this.state === 'attack' || this.state === 'hurt') {
+          this.state = 'idle';
+          this.frameIndex = 0;
+        } else {
+          this.frameIndex = 0;
+        }
+      }
+    }
+  }
+
   update(dt, engine) {
+    if (!this.active && this.state !== 'die') return;
+
+    this._updateAnimation(dt);
+
     if (!this.active) return;
 
     this.energy = Math.min(this.maxEnergy, this.energy + CONFIG.PLAYER.ENERGY_REGEN * dt);
@@ -187,8 +211,10 @@ export class Player extends Entity {
       this.y += moveDir.vy * this.speed * dt;
 
       if (moveDir.vx !== 0 || moveDir.vy !== 0) {
-        this.state = 'walk';
-      } else if (this.state !== 'attack') {
+        if (this.state !== 'attack' && this.state !== 'hurt') {
+          this.state = 'walk';
+        }
+      } else if (this.state !== 'attack' && this.state !== 'hurt') {
         this.state = 'idle';
       }
 
@@ -210,37 +236,35 @@ export class Player extends Entity {
   }
 
   draw(ctx) {
-    if (!this.active) return;
-
-    // 1. Sombra en el piso
     SpriteRenderer.drawShadow(ctx, this.x, this.y, this.radius);
 
     ctx.save();
     if (this.invulnerableTimer > 0 && Math.floor(Date.now() / 70) % 2 === 0) {
-      ctx.globalAlpha = 0.35;
+      ctx.globalAlpha = 0.4;
     }
 
-    // 2. Intentar dibujar sprite si existe
-    // Se voltea horizontalmente (flipX) si apunta hacia la izquierda
     const isFacingLeft = Math.abs(this.aimAngle) > Math.PI / 2;
-    const drew = SpriteRenderer.drawEntitySprite({
+
+    let sheetKey = 'player_pistol';
+    if (this.currentWeaponKey === 'SHOTGUN') sheetKey = 'player_shotgun';
+    else if (this.currentWeaponKey === 'ENERGY_BEAM') sheetKey = 'player_energy_beam';
+
+    const drew = SpriteRenderer.drawAnimatedSprite({
       ctx,
-      imageKey: 'player',
+      imageKey: sheetKey,
+      animState: this.state,
+      frameIndex: this.frameIndex,
       x: this.x,
       y: this.y,
-      width: 48,
-      height: 48,
-      flipX: isFacingLeft,
-      yOffset: -6 // Eleva el torso para dar perspectiva 2.5D
+      width: 58,
+      height: 58,
+      angle: 0,
+      flipX: isFacingLeft
     });
 
-    // 3. Fallback procedural si aún no agregaste player_walk.png
     if (!drew) {
       ctx.translate(this.x, this.y);
       ctx.rotate(this.aimAngle);
-
-      ctx.shadowBlur = this.isDashing ? 25 : 12;
-      ctx.shadowColor = this.isDashing ? '#ffffff' : '#00f0ff';
       ctx.fillStyle = this.isDashing ? '#ffffff' : '#00f0ff';
       ctx.beginPath();
       ctx.arc(0, 0, this.radius, 0, Math.PI * 2);
@@ -249,11 +273,6 @@ export class Player extends Entity {
       const weapon = CONFIG.WEAPONS[this.currentWeaponKey];
       ctx.fillStyle = weapon.color;
       ctx.fillRect(8, -3.5, 18, 7);
-
-      ctx.fillStyle = '#ffffff';
-      ctx.beginPath();
-      ctx.arc(0, 0, 7, 0, Math.PI * 2);
-      ctx.fill();
     }
 
     ctx.restore();

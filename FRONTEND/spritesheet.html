@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <title>Ajustador de Spritesheet a Medidas Exactas</title>
+  <style>
+    body { background: #080c16; color: #00f0ff; font-family: monospace; padding: 20px; }
+    .box { border: 1px dashed #00f0ff; padding: 15px; margin-bottom: 20px; max-width: 600px; }
+    button { background: #00f0ff; color: #000; font-weight: bold; border: none; padding: 10px 16px; cursor: pointer; margin-top: 10px; }
+    canvas { border: 1px solid #ff0077; background: transparent; display: block; margin-top: 10px; }
+  </style>
+</head>
+<body>
+  <h2>Ajustador a Medidas Exactas de Motor (64x64 px)</h2>
+  
+  <div class="box">
+    <p>1. Selecciona la imagen que descargaste (con fondo de ajedrez o resolución desfasada):</p>
+    <input type="file" id="imgInput" accept="image/*">
+  </div>
+
+  <div class="box">
+    <p>2. Elige el formato a generar:</p>
+    <button onclick="procesarPiernas()">Generar player_legs.png (384x256 px)</button>
+    <button onclick="procesarTorso()">Generar player_torso.png (64x64 px)</button>
+    <button onclick="procesarClasico()">Generar player_sheet.png (384x320 px)</button>
+  </div>
+
+  <canvas id="outCanvas"></canvas>
+
+  <script>
+    let rawImg = new Image();
+    const cv = document.getElementById('outCanvas');
+    const ctx = cv.getContext('2d');
+
+    document.getElementById('imgInput').addEventListener('change', (e) => {
+      const file = e.target.files[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = (ev) => {
+        rawImg.onload = () => alert(`Imagen cargada (${rawImg.width}x${rawImg.height} px). Lista para exportar con medidas exactas.`);
+        rawImg.src = ev.target.result;
+      };
+      reader.readAsDataURL(file);
+    });
+
+    // Elimina el falso fondo de cuadros de ajedrez convirtiendo grises neutros a transparente
+    function quitarFalsoAjedrez(context, w, h) {
+      const imgData = context.getImageData(0, 0, w, h);
+      const d = imgData.data;
+      for (let i = 0; i < d.length; i += 4) {
+        const r = d[i], g = d[i+1], b = d[i+2];
+        // Detecta los tonos típicos del patrón de ajedrez simulado (grises entre 170 y 235 donde R=G=B)
+        const esGris = Math.abs(r - g) < 8 && Math.abs(g - b) < 8;
+        if (esGris && r > 150) {
+          d[i + 3] = 0; // Transparente
+        }
+      }
+      context.putImageData(imgData, 0, 0);
+    }
+
+    function descargar(nombre) {
+      const a = document.createElement('a');
+      a.download = nombre;
+      a.href = cv.toDataURL('image/png');
+      a.click();
+    }
+
+    function procesarPiernas() {
+      if (!rawImg.src) return alert('Primero sube la imagen.');
+      cv.width = 384;
+      cv.height = 256;
+      ctx.clearRect(0, 0, cv.width, cv.height);
+
+      // La sección de piernas ocupa los primeros 6/9 de ancho y 4/5 de alto
+      const srcW = rawImg.width * (6 / 9);
+      const srcH = rawImg.height * (4 / 5);
+
+      ctx.drawImage(rawImg, 0, 0, srcW, srcH, 0, 0, 384, 256);
+      quitarFalsoAjedrez(ctx, 384, 256);
+      descargar('player_legs.png');
+    }
+
+    function procesarTorso() {
+      if (!rawImg.src) return alert('Primero sube la imagen.');
+      cv.width = 64;
+      cv.height = 64;
+      ctx.clearRect(0, 0, 64, 64);
+
+      // El torso con rifle a 0° está en la esquina superior derecha
+      const cellW = rawImg.width / 9;
+      const cellH = rawImg.height / 5;
+      const srcX = rawImg.width - cellW;
+      const srcY = 0;
+
+      ctx.drawImage(rawImg, srcX, srcY, cellW, cellH, 0, 0, 64, 64);
+      quitarFalsoAjedrez(ctx, 64, 64);
+      descargar('player_torso.png');
+    }
+
+    function procesarClasico() {
+      if (!rawImg.src) return alert('Primero sube la imagen.');
+      cv.width = 384;
+      cv.height = 320;
+      ctx.clearRect(0, 0, 384, 320);
+
+      // Ajuste al tamaño estándar 384x320
+      ctx.drawImage(rawImg, 0, 0, rawImg.width, rawImg.height, 0, 0, 384, 320);
+      quitarFalsoAjedrez(ctx, 384, 320);
+      descargar('player_sheet.png');
+    }
+  </script>
+</body>
+</html>

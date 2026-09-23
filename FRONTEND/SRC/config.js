@@ -38,6 +38,7 @@ export const CONFIG = {
 
   // Arsenal de Armas
   // Arsenal de Armas con Munición
+  // En frontend/src/config.js dentro de WEAPONS:
   WEAPONS: {
     PISTOL: {
       name: "Pistola Rápida",
@@ -50,8 +51,9 @@ export const CONFIG = {
       pellets: 1,
       penetration: 1,
       color: "#00f0ff",
-      maxAmmo: Infinity,  // Arma base confiable
-      startAmmo: Infinity
+      maxAmmo: Infinity,
+      startAmmo: Infinity,
+      ammoType: null // Infinita
     },
     SHOTGUN: {
       name: "Escopeta de Choque",
@@ -66,7 +68,8 @@ export const CONFIG = {
       color: "#ff0077",
       maxAmmo: 48,
       startAmmo: 24,
-      ammoPerPickup: 12
+      ammoPerPickup: 16,
+      ammoType: "ammo_shotgun"
     },
     ENERGY_BEAM: {
       name: "Fusil de Plasma",
@@ -80,17 +83,20 @@ export const CONFIG = {
       penetration: 3,
       color: "#39ff14",
       maxAmmo: 30,
-      startAmmo: 15,
-      ammoPerPickup: 8
+      startAmmo: 12,
+      ammoPerPickup: 8,
+      ammoType: "ammo_plasma"
     }
   },
 
-  // Configuración de Pickups
   PICKUPS: {
-    AMMO: {
-      radius: 8,
-      color: '#ffd700', // Dorado neón
-      respawnTime: 20 // segundos si es spawner fijo de mapa
+    AMMO_SHOTGUN: {
+      color: '#ff0077', // Rosa/Rojo Neón (identifica a la escopeta)
+      label: 'SG'
+    },
+    AMMO_PLASMA: {
+      color: '#39ff14', // Verde Plasma Neón
+      label: 'PL'
     }
   },
 
@@ -172,35 +178,71 @@ export const CONFIG = {
   },
 
 // Rutas y manifiesto de Assets
+  // frontend/src/config.js (dentro de CONFIG)
   ASSETS: {
-    USE_IMAGE_SPRITES: true, // <-- Activamos carga de imágenes
+    USE_IMAGE_SPRITES: true,
     USE_AUDIO: false,
     SPRITES: {
       // Suelo y entorno
-      tile_floor: 'ASSETS/tiles/floor_metal.png',
-      tile_wall: 'assets/tiles/wall_tech.png',
-      obstacle_box: 'assets/tiles/obstacle_box.png',
+      tile_floor: './assets/tiles/floor_metal.png',
+      tile_wall: './assets/tiles/wall_tech.png',
+      obstacle_box: './assets/tiles/obstacle_box.png',
 
-      // Jugador
-      player: 'assets/characters/player_walk.png',
+      // Spritesheets por cada arma (1536x1024 px: 6 columnas x 5 filas)
+      player_pistol: {
+        src: './assets/characters/player_pistol.png',
+        frameW: 256,
+        frameH: 204.8,
+        animations: {
+          idle:   { row: 0, frames: 4, speed: 0.18 },
+          walk:   { row: 1, frames: 6, speed: 0.10 },
+          attack: { row: 2, frames: 3, speed: 0.08 },
+          hurt:   { row: 3, frames: 2, speed: 0.12 },
+          die:    { row: 4, frames: 5, speed: 0.15 }
+        }
+      },
+      player_shotgun: {
+        src: './assets/characters/player_shotgun.png',
+        frameW: 256,
+        frameH: 204.8,
+        animations: {
+          idle:   { row: 0, frames: 4, speed: 0.18 },
+          walk:   { row: 1, frames: 6, speed: 0.10 },
+          attack: { row: 2, frames: 3, speed: 0.08 },
+          hurt:   { row: 3, frames: 2, speed: 0.12 },
+          die:    { row: 4, frames: 5, speed: 0.15 }
+        }
+      },
+      player_energy_beam: {
+        src: './assets/characters/player_plasma.png',
+        frameW: 256,
+        frameH: 204.8,
+        animations: {
+          idle:   { row: 0, frames: 4, speed: 0.18 },
+          walk:   { row: 1, frames: 6, speed: 0.10 },
+          attack: { row: 2, frames: 3, speed: 0.08 },
+          hurt:   { row: 3, frames: 2, speed: 0.12 },
+          die:    { row: 4, frames: 5, speed: 0.15 }
+        }
+      },
 
       // Enemigos
-      enemy_hunter: 'assets/enemies/hunter.png',
-      enemy_ranger: 'assets/enemies/ranger.png',
-      enemy_swarm: 'assets/enemies/swarm.png',
-      enemy_tank: 'assets/enemies/tank.png',
-      enemy_kamikaze: 'assets/enemies/kamikaze.png',
+      enemy_hunter: './assets/enemies/hunter.png',
+      enemy_ranger: './assets/enemies/ranger.png',
+      enemy_swarm: './assets/enemies/swarm.png',
+      enemy_tank: './assets/enemies/tank.png',
+      enemy_kamikaze: './assets/enemies/kamikaze.png',
 
       // Jefes
-      boss_goliath: 'assets/bosses/void_colossus.png',
-      boss_tempest: 'assets/bosses/tempest_core.png'
+      boss_goliath: './assets/bosses/void_colossus.png',
+      boss_tempest: './assets/bosses/tempest_core.png'
     },
     AUDIO: {
-      bgm_arena: 'assets/audio/bgm/arena_theme.mp3',
-      sfx_shoot: 'assets/audio/sfx/shoot.wav',
-      sfx_dash: 'assets/audio/sfx/dash.wav',
-      sfx_hit: 'assets/audio/sfx/hit.wav',
-      sfx_boom: 'assets/audio/sfx/explosion.wav'
+      bgm_arena: './assets/audio/bgm/arena_theme.mp3',
+      sfx_shoot: './assets/audio/sfx/shoot.wav',
+      sfx_dash:  './assets/audio/sfx/dash.wav',
+      sfx_hit:   './assets/audio/sfx/hit.wav',
+      sfx_boom:  './assets/audio/sfx/explosion.wav'
     }
   }
 };

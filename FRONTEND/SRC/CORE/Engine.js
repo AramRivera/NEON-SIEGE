@@ -53,13 +53,15 @@ export class Engine {
     window.addEventListener('resize', () => this.resizeCanvas());
   }
 
+  // En frontend/src/core/Engine.js dentro de _spawnInitialPickups():
   _spawnInitialPickups() {
     const cx = CONFIG.ARENA.WIDTH / 2;
     const cy = CONFIG.ARENA.HEIGHT / 2;
-    this.pickups.push(new Pickup(cx - 150, cy - 100, 'ammo', 15));
-    this.pickups.push(new Pickup(cx + 150, cy + 100, 'ammo', 15));
-    this.pickups.push(new Pickup(cx - 200, cy + 80, 'exp', 30));
-    this.pickups.push(new Pickup(cx + 200, cy - 80, 'exp', 30));
+    // Caja roja para Escopeta y caja verde para Plasma
+    this.pickups.push(new Pickup(cx - 150, cy - 80, 'ammo_shotgun', 16, 'SHOTGUN'));
+    this.pickups.push(new Pickup(cx + 150, cy + 80, 'ammo_plasma', 8, 'ENERGY_BEAM'));
+    this.pickups.push(new Pickup(cx - 200, cy + 60, 'exp', 30));
+    this.pickups.push(new Pickup(cx + 200, cy - 60, 'exp', 30));
   }
 
   _setupUIListeners() {
@@ -126,36 +128,45 @@ export class Engine {
   triggerLevelUp() {
     this.isPaused = true;
 
-    // Catálogo de mejoras que modifican las estadísticas reales
+    // Mejoras independientes por arma y de movilidad
     const availableUpgrades = [
       {
-        title: '+25% Daño',
-        desc: 'Sobrecarga los condensadores de plasma para infligir mayor impacto destructivo.',
-        apply: () => { this.player.dmgMultiplier += 0.25; }
+        title: 'Cadencia: Pistola +35%',
+        desc: 'Aumenta significativamente la velocidad de disparo de tu pistola rápida.',
+        apply: () => { this.player.weaponModifiers.PISTOL.fireRateMult += 0.35; }
       },
       {
-        title: '+20% Cadencia',
-        desc: 'Reduce el intervalo de enfriamiento entre disparos consecutivos.',
-        apply: () => { this.player.fireRateMultiplier += 0.20; }
+        title: 'Cadencia: Escopeta +25%',
+        desc: 'Reduce el tiempo de recarga entre ráfagas de perdigones.',
+        apply: () => { this.player.weaponModifiers.SHOTGUN.fireRateMult += 0.25; }
       },
       {
-        title: '+40 Velocidad',
-        desc: 'Optimiza los actuadores de las extremidades para desplazarse más rápido.',
-        apply: () => { this.player.speed += 40; }
+        title: 'Cadencia: Plasma +20%',
+        desc: 'Acelera la salida de los rayos penetrantes de energía.',
+        apply: () => { this.player.weaponModifiers.ENERGY_BEAM.fireRateMult += 0.20; }
       },
       {
-        title: '+1 Proyectil',
-        desc: 'Añade una bala o perdigón adicional a cada descarga del arma.',
+        title: 'Potencia: Escopeta (+Perdigón)',
+        desc: 'Añade +1 perdigón extra a cada descarga de escopeta.',
         apply: () => { this.player.extraPellets += 1; }
       },
       {
-        title: 'Imán Ampliado',
-        desc: 'Incrementa el radio de atracción de gemas y munición en +70px.',
-        apply: () => { this.player.magnetRadius += 70; }
+        title: 'Daño Plasma +30%',
+        desc: 'Incrementa la potencia destructiva de los rayos de plasma.',
+        apply: () => { this.player.weaponModifiers.ENERGY_BEAM.dmgMult += 0.30; }
+      },
+      {
+        title: 'Servos: +40 Velocidad',
+        desc: 'Mejora la velocidad de carrera en todas las direcciones.',
+        apply: () => { this.player.speed += 40; }
+      },
+      {
+        title: 'Imán Ampliado +60px',
+        desc: 'Atrae munición y gemas de experiencia desde mayor distancia.',
+        apply: () => { this.player.magnetRadius += 60; }
       }
     ];
 
-    // Barajar y tomar 3
     const selected = availableUpgrades.sort(() => 0.5 - Math.random()).slice(0, 3);
     const container = document.getElementById('upgrades-container');
     if (!container) return;
@@ -309,15 +320,16 @@ export class Engine {
 
       const dist = Math.hypot(p.x - this.player.x, p.y - this.player.y);
       if (dist < p.radius + this.player.radius) {
-        if (p.type === 'ammo') {
-          this.player.addAmmo(p.weaponTarget, p.value);
-          this.particleSystem.emitSparks(p.x, p.y, '#ffd700', 16);
+        if (p.type === 'ammo_shotgun') {
+          this.player.addSpecificAmmo('SHOTGUN', p.value);
+          this.particleSystem.emitSparks(p.x, p.y, '#ff0077', 16);
+        } else if (p.type === 'ammo_plasma') {
+          this.player.addSpecificAmmo('ENERGY_BEAM', p.value);
+          this.particleSystem.emitSparks(p.x, p.y, '#39ff14', 16);
         } else if (p.type === 'exp') {
           const leveledUp = this.player.addExp(p.value);
           this.particleSystem.emitSparks(p.x, p.y, '#aa00ff', 12);
-          if (leveledUp) {
-            this.triggerLevelUp();
-          }
+          if (leveledUp) this.triggerLevelUp();
         } else if (p.type === 'heal') {
           this.player.hp = Math.min(this.player.maxHp, this.player.hp + p.value);
           this.particleSystem.emitSparks(p.x, p.y, '#00ff66', 14);
@@ -437,9 +449,19 @@ export class Engine {
   }
 
   _drawArena() {
-    this.ctx.fillStyle = '#060913';
-    this.ctx.fillRect(0, 0, CONFIG.ARENA.WIDTH, CONFIG.ARENA.HEIGHT);
+    // 1. DIBUJAR SUELO CON TEXTURA REPETIDA
+    const floorImg = assetManager.getImage('tile_floor');
+    if (floorImg) {
+      const pattern = this.ctx.createPattern(floorImg, 'repeat');
+      this.ctx.fillStyle = pattern;
+      this.ctx.fillRect(0, 0, CONFIG.ARENA.WIDTH, CONFIG.ARENA.HEIGHT);
+    } else {
+      // Color base de respaldo si no hay imagen de piso
+      this.ctx.fillStyle = '#060913';
+      this.ctx.fillRect(0, 0, CONFIG.ARENA.WIDTH, CONFIG.ARENA.HEIGHT);
+    }
 
+    // 2. Cuadrícula de depuración (opcional)
     if (CONFIG.ARENA.SHOW_DEBUG_GRID) {
       this.ctx.strokeStyle = 'rgba(0, 240, 255, 0.08)';
       this.ctx.lineWidth = 1;
@@ -452,6 +474,7 @@ export class Engine {
       }
     }
 
+    // 3. Bordes exteriores luminosos de la arena
     this.ctx.save();
     this.ctx.strokeStyle = '#00f0ff';
     this.ctx.lineWidth = 4;
@@ -460,19 +483,25 @@ export class Engine {
     this.ctx.strokeRect(0, 0, CONFIG.ARENA.WIDTH, CONFIG.ARENA.HEIGHT);
     this.ctx.restore();
 
+    // 4. Obstáculos con textura o bisel
+    const boxImg = assetManager.getImage('obstacle_box');
     for (const obs of CONFIG.ARENA.OBSTACLES) {
-      this.ctx.fillStyle = '#101726';
-      this.ctx.fillRect(obs.x, obs.y, obs.w, obs.h);
-      this.ctx.strokeStyle = '#1e304f';
-      this.ctx.lineWidth = 2;
-      this.ctx.strokeRect(obs.x, obs.y, obs.w, obs.h);
+      if (boxImg) {
+        this.ctx.drawImage(boxImg, obs.x, obs.y, obs.w, obs.h);
+      } else {
+        this.ctx.fillStyle = '#101726';
+        this.ctx.fillRect(obs.x, obs.y, obs.w, obs.h);
+        this.ctx.strokeStyle = '#1e304f';
+        this.ctx.lineWidth = 2;
+        this.ctx.strokeRect(obs.x, obs.y, obs.w, obs.h);
 
-      this.ctx.fillStyle = '#00f0ff';
-      const cSize = 6;
-      this.ctx.fillRect(obs.x, obs.y, cSize, cSize);
-      this.ctx.fillRect(obs.x + obs.w - cSize, obs.y, cSize, cSize);
-      this.ctx.fillRect(obs.x, obs.y + obs.h - cSize, cSize, cSize);
-      this.ctx.fillRect(obs.x + obs.w - cSize, obs.y + obs.h - cSize, cSize, cSize);
+        this.ctx.fillStyle = '#00f0ff';
+        const cSize = 6;
+        this.ctx.fillRect(obs.x, obs.y, cSize, cSize);
+        this.ctx.fillRect(obs.x + obs.w - cSize, obs.y, cSize, cSize);
+        this.ctx.fillRect(obs.x, obs.y + obs.h - cSize, cSize, cSize);
+        this.ctx.fillRect(obs.x + obs.w - cSize, obs.y + obs.h - cSize, cSize, cSize);
+      }
     }
   }
 }

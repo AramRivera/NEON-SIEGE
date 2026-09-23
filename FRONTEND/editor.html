@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <title>Neon Siege - Visual Map & Arena Editor</title>
+  <link rel="stylesheet" href="css/editor.css">
+</head>
+<body>
+  <div id="sidebar">
+    <h2>Editor de Mapas</h2>
+    <p style="font-size:11px; color:#888;">Neon Siege Tooling</p>
+
+    <div class="tool-section">
+      <h3>1. Dimensiones del Mapa</h3>
+      <div style="display:flex; gap:8px;">
+        <label style="font-size:11px; flex:1;">Ancho:
+          <input type="number" id="inp-width" value="2400" step="64" style="width:100%; background:#111; color:#00f0ff; border:1px solid #333; padding:4px;">
+        </label>
+        <label style="font-size:11px; flex:1;">Alto:
+          <input type="number" id="inp-height" value="1800" step="64" style="width:100%; background:#111; color:#00f0ff; border:1px solid #333; padding:4px;">
+        </label>
+      </div>
+      <button class="btn" id="btn-resize">Aplicar Tamaño</button>
+    </div>
+
+    <div class="tool-section">
+      <h3>2. Elemento Activo</h3>
+      <div class="palette-grid" id="palette-container"></div>
+    </div>
+
+    <div class="tool-section" style="margin-top:auto;">
+      <h3>3. Acciones de Mapa</h3>
+      <button class="btn" id="btn-export">Exportar JSON a Archivo</button>
+      <button class="btn" id="btn-copy">Copiar JSON al Portapapeles</button>
+      <button class="btn btn-pink" id="btn-import">Cargar JSON</button>
+      <input type="file" id="file-input" accept=".json" style="display:none;">
+      <button class="btn btn-pink" id="btn-clear" style="margin-top:4px;">Limpiar Mapa</button>
+    </div>
+  </div>
+
+  <div id="viewport">
+    <canvas id="editorCanvas"></canvas>
+    <div id="info-bar">Cámara: X:0 Y:0 | Cursor: X:0 Y:0 | [Arrastrar Izq: Pintar | Der: Borrar | Rueda/MMB: Mover Cámara]</div>
+  </div>
+
+  <script type="module" src="src/tools/MapEditor.js"></script>
+</body>
+</html>

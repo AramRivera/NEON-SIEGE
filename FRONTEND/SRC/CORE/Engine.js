@@ -7,6 +7,7 @@ import { ObjectPool } from '../SYSTEMS/ObjectPool.js';
 import { ParticleSystem } from '../SYSTEMS/ParticleSystem.js';
 import { Projectile } from '../ENTITIES/Projectile.js';
 import { Player } from '../ENTITIES/Player.js';
+import { Pickup } from '../ENTITIES/Pickup.js';
 
 export class Engine {
   constructor(canvas) {
@@ -20,19 +21,32 @@ export class Engine {
     this.camera = new Camera(this.canvas.width, this.canvas.height);
     this.spatialGrid = new SpatialGrid(CONFIG.ARENA.WIDTH, CONFIG.ARENA.HEIGHT, CONFIG.ARENA.GRID_CELL_SIZE);
 
-    // Sistemas y Pools
     this.particleSystem = new ParticleSystem();
     this.playerBulletsPool = new ObjectPool(() => new Projectile(), CONFIG.POOLS.PLAYER_BULLETS);
     this.enemyBulletsPool = new ObjectPool(() => new Projectile(), CONFIG.POOLS.ENEMY_BULLETS);
 
-    // Jugador (centrado en la arena al inicio)
     this.player = new Player(CONFIG.ARENA.WIDTH / 2, CONFIG.ARENA.HEIGHT / 2);
+    this.pickups = [];
+
+    // Spawneamos algunos pickups iniciales alrededor para probar recolección
+    this._spawnInitialPickups();
 
     this.lastTime = performance.now();
     this.isPaused = false;
     this.isRunning = false;
 
     window.addEventListener('resize', () => this.resizeCanvas());
+  }
+
+  _spawnInitialPickups() {
+    const cx = CONFIG.ARENA.WIDTH / 2;
+    const cy = CONFIG.ARENA.HEIGHT / 2;
+    // Cajas de munición doradas
+    this.pickups.push(new Pickup(cx - 150, cy - 100, 'ammo', 15));
+    this.pickups.push(new Pickup(cx + 150, cy + 100, 'ammo', 15));
+    // Gemas de exp violetas
+    this.pickups.push(new Pickup(cx - 200, cy + 80, 'exp', 25));
+    this.pickups.push(new Pickup(cx + 200, cy - 80, 'exp', 25));
   }
 
   resizeCanvas() {
@@ -46,7 +60,6 @@ export class Engine {
   start() {
     this.isRunning = true;
     this.lastTime = performance.now();
-    console.log('[Neon Siege] Motor y Jugador inicializados.');
     requestAnimationFrame((time) => this._loop(time));
   }
 
@@ -65,22 +78,38 @@ export class Engine {
   }
 
   update(dt) {
-    // 1. Sincronizar coordenadas del mouse con la posición del mundo
     this.input.updateWorldCoordinates(this.camera.x, this.camera.y);
 
-    // 2. Actualizar Jugador
     this.player.update(dt, this);
-
-    // 3. Cámara siguiendo suavemente al jugador
     this.camera.follow(this.player.x, this.player.y);
 
-    // 4. Actualizar Proyectiles activos del Jugador contra obstáculos
+    // Actualizar Proyectiles del jugador
     const activeBullets = this.playerBulletsPool.getActive();
     for (let i = 0; i < activeBullets.length; i++) {
       activeBullets[i].update(dt, CONFIG.ARENA.OBSTACLES);
     }
 
-    // 5. Actualizar Partículas
+    // Actualizar Pickups y colisión con el jugador
+    for (let i = this.pickups.length - 1; i >= 0; i--) {
+      const p = this.pickups[i];
+      p.update(dt, this.player);
+
+      const dist = Math.hypot(p.x - this.player.x, p.y - this.player.y);
+      if (dist < p.radius + this.player.radius) {
+        if (p.type === 'ammo') {
+          this.player.addAmmo(p.weaponTarget, p.value);
+          this.particleSystem.emitSparks(p.x, p.y, '#ffd700', 16);
+        } else if (p.type === 'exp') {
+          this.player.addExp(p.value);
+          this.particleSystem.emitSparks(p.x, p.y, '#aa00ff', 12);
+        } else if (p.type === 'heal') {
+          this.player.hp = Math.min(this.player.maxHp, this.player.hp + p.value);
+          this.particleSystem.emitSparks(p.x, p.y, '#00ff66', 14);
+        }
+        this.pickups.splice(i, 1);
+      }
+    }
+
     this.particleSystem.update(dt);
   }
 
@@ -92,20 +121,68 @@ export class Engine {
     const camY = Math.floor(this.camera.y || 0);
     this.ctx.translate(-camX, -camY);
 
-    // Dibujar Arena inmersiva
     this._drawArena();
 
-    // Dibujar Proyectiles
+    // Dibujar Pickups
+    for (let i = 0; i < this.pickups.length; i++) {
+      this.pickups[i].draw(this.ctx);
+    }
+
+    // Dibujar Balas
     const activeBullets = this.playerBulletsPool.getActive();
     for (let i = 0; i < activeBullets.length; i++) {
       activeBullets[i].draw(this.ctx);
     }
 
-    // Dibujar Jugador
     this.player.draw(this.ctx);
-
-    // Dibujar Partículas
     this.particleSystem.draw(this.ctx);
+
+    this.ctx.restore();
+
+    // HUD superpuesto en pantalla fija (no afectado por la cámara)
+    this._drawHUD();
+  }
+
+  _drawHUD() {
+    this.ctx.save();
+    const p = this.player;
+    const w = CONFIG.WEAPONS[p.currentWeaponKey];
+
+    // Panel HUD inferior izquierdo
+    const hudX = 24;
+    const hudY = this.canvas.height - 90;
+
+    this.ctx.fillStyle = 'rgba(7, 11, 20, 0.75)';
+    this.ctx.strokeStyle = '#00f0ff';
+    this.ctx.lineWidth = 1;
+    this.ctx.strokeRect(hudX, hudY, 260, 70);
+    this.ctx.fillRect(hudX, hudY, 260, 70);
+
+    // Barra de Vida
+    this.ctx.fillStyle = '#ff0055';
+    this.ctx.fillRect(hudX + 10, hudY + 12, (p.hp / p.maxHp) * 120, 8);
+    this.ctx.strokeStyle = '#333';
+    this.ctx.strokeRect(hudX + 10, hudY + 12, 120, 8);
+
+    // Barra de Energía
+    this.ctx.fillStyle = '#00f0ff';
+    this.ctx.fillRect(hudX + 10, hudY + 26, (p.energy / p.maxEnergy) * 120, 8);
+    this.ctx.strokeStyle = '#333';
+    this.ctx.strokeRect(hudX + 10, hudY + 26, 120, 8);
+
+    // Datos del Arma y Balas
+    this.ctx.font = 'bold 13px monospace';
+    this.ctx.fillStyle = w.color;
+    this.ctx.fillText(w.name.toUpperCase(), hudX + 140, hudY + 20);
+
+    this.ctx.font = 'bold 15px monospace';
+    this.ctx.fillStyle = '#ffd700';
+    const ammoText = p.ammo[p.currentWeaponKey] === Infinity ? 'INF' : `${p.ammo[p.currentWeaponKey]} / ${w.maxAmmo}`;
+    this.ctx.fillText(`BALAS: ${ammoText}`, hudX + 140, hudY + 42);
+
+    this.ctx.font = '11px monospace';
+    this.ctx.fillStyle = '#888';
+    this.ctx.fillText('[1] PISTOLA  [2] ESCOPETA  [3] PLASMA', hudX + 10, hudY + 56);
 
     this.ctx.restore();
   }
@@ -126,7 +203,6 @@ export class Engine {
       }
     }
 
-    // Bordes neón
     this.ctx.save();
     this.ctx.strokeStyle = '#00f0ff';
     this.ctx.lineWidth = 4;
@@ -135,7 +211,6 @@ export class Engine {
     this.ctx.strokeRect(0, 0, CONFIG.ARENA.WIDTH, CONFIG.ARENA.HEIGHT);
     this.ctx.restore();
 
-    // Obstáculos ambientales
     for (const obs of CONFIG.ARENA.OBSTACLES) {
       this.ctx.fillStyle = '#101726';
       this.ctx.fillRect(obs.x, obs.y, obs.w, obs.h);

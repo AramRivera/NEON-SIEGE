@@ -2,6 +2,7 @@
 const TILE_SIZE = 64;
 
 // Definición de paleta de elementos (Suelos, Paredes, Marcadores de Entidad)
+// Dentro de PALETTE en frontend/src/tools/MapEditor.js
 const PALETTE = [
   { id: 'floor_metal', category: 'floor', name: 'Placa Metal', color: '#161e2e', hasCollision: false },
   { id: 'floor_grid',  category: 'floor', name: 'Rejilla Neón', color: '#0f293a', hasCollision: false },
@@ -9,7 +10,8 @@ const PALETTE = [
   { id: 'wall_hazard', category: 'wall',  name: 'Muro Bloque', color: '#ff0077', hasCollision: true },
   { id: 'wall_pillar', category: 'wall',  name: 'Pilar Central',color: '#6c15a8', hasCollision: true },
   { id: 'spawn_player',category: 'marker',name: 'Spawn Jugador',color: '#39ff14', isPlayerSpawn: true },
-  { id: 'spawn_enemy', category: 'marker',name: 'Portal Enemigo',color: '#ffaa00', isEnemySpawn: true }
+  { id: 'spawn_enemy', category: 'marker',name: 'Portal Enemigo',color: '#ffaa00', isEnemySpawn: true },
+  { id: 'spawn_ammo',  category: 'marker',name: 'Caja Munición',color: '#ffd700', isAmmoSpawn: true }
 ];
 
 class MapEditor {

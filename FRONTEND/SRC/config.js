@@ -37,30 +37,36 @@ export const CONFIG = {
   },
 
   // Arsenal de Armas
+  // Arsenal de Armas con Munición
   WEAPONS: {
     PISTOL: {
       name: "Pistola Rápida",
-      cadence: 0.14,         // segundos entre disparos
+      cadence: 0.14,
       damage: 18,
       bulletSpeed: 900,
-      spread: 0.04,          // radianes de dispersión
+      spread: 0.04,
       range: 850,
       energyCost: 0,
       pellets: 1,
       penetration: 1,
-      color: "#00f0ff"
+      color: "#00f0ff",
+      maxAmmo: Infinity,  // Arma base confiable
+      startAmmo: Infinity
     },
     SHOTGUN: {
       name: "Escopeta de Choque",
       cadence: 0.65,
-      damage: 14,            // daño por perdigón
+      damage: 14,
       bulletSpeed: 750,
       spread: 0.28,
       range: 520,
       energyCost: 15,
       pellets: 6,
       penetration: 1,
-      color: "#ff0077"
+      color: "#ff0077",
+      maxAmmo: 48,
+      startAmmo: 24,
+      ammoPerPickup: 12
     },
     ENERGY_BEAM: {
       name: "Fusil de Plasma",
@@ -71,8 +77,20 @@ export const CONFIG = {
       range: 1200,
       energyCost: 20,
       pellets: 1,
-      penetration: 3,        // atraviesa múltiples entidades
-      color: "#39ff14"
+      penetration: 3,
+      color: "#39ff14",
+      maxAmmo: 30,
+      startAmmo: 15,
+      ammoPerPickup: 8
+    }
+  },
+
+  // Configuración de Pickups
+  PICKUPS: {
+    AMMO: {
+      radius: 8,
+      color: '#ffd700', // Dorado neón
+      respawnTime: 20 // segundos si es spawner fijo de mapa
     }
   },
 

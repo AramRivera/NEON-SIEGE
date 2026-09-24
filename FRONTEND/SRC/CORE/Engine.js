@@ -48,9 +48,32 @@ export class Engine {
     this.isRunning = false;
     this.isGameOver = false;
 
+    // ---- AUDIO: volumen master (sincronizado con los ajustes del menú) ----
+    this.masterVolume = assetManager.masterVolume;
+    // ---- AUDIO: pantalla de game over ----
+    this.screenShakeEnabled = true;
+
     this._setupUIListeners();
     this._spawnInitialPickups();
+    this._setupAudioUnlock();
     window.addEventListener('resize', () => this.resizeCanvas());
+  }
+
+  // ------------------------------------------------------------
+  //  AUDIO: desbloquear reproducción tras la primera interacción
+  // ------------------------------------------------------------
+  _setupAudioUnlock() {
+    const unlock = () => {
+      assetManager.unlockAudio();
+      // Reanudar BGM si quedó pendiente por el bloqueo de autoplay
+      if (this.isRunning && CONFIG.ASSETS.USE_AUDIO) {
+        assetManager.playBgm('bgm_arena', { loop: true, fadeIn: 0.8 });
+      }
+      window.removeEventListener('pointerdown', unlock);
+      window.removeEventListener('keydown', unlock);
+    };
+    window.addEventListener('pointerdown', unlock);
+    window.addEventListener('keydown', unlock);
   }
 
   // En frontend/src/core/Engine.js dentro de _spawnInitialPickups():
@@ -107,6 +130,10 @@ export class Engine {
   start() {
     this.isRunning = true;
     this.lastTime = performance.now();
+
+    // ---- AUDIO: arrancar música de fondo de la arena (con fade in) ----
+    assetManager.playBgm('bgm_arena', { loop: true, fadeIn: 1.2 });
+
     this.waveManager.startWave(1);
     requestAnimationFrame((time) => this._loop(time));
   }
@@ -123,10 +150,15 @@ export class Engine {
     this.bossesDefeated++;
     this.score += Math.floor(CONFIG.SCORING.BOSS_BASE * this.comboMult);
     this.currentBoss = null;
+    // ---- AUDIO: explosión potente al morir el jefe ----
+    assetManager.playSound('sfx_boom', 0.7);
   }
 
   triggerLevelUp() {
     this.isPaused = true;
+
+    // ---- AUDIO: sonido de subida de nivel ----
+    assetManager.playSound('sfx_levelup', 0.6);
 
     // Mejoras independientes por arma y de movilidad
     const availableUpgrades = [
@@ -190,6 +222,9 @@ export class Engine {
   async onGameOver() {
     this.isGameOver = true;
 
+    // ---- AUDIO: detener la música de fondo ----
+    assetManager.stopBgm(1.0);
+
     // Actualizar datos del modal
     document.getElementById('final-score').innerText = this.score;
     document.getElementById('final-wave').innerText = this.waveManager.currentWave;
@@ -242,7 +277,6 @@ export class Engine {
   }
 
   update(dt) {
-    
     this.gameTime += dt;
     this.input.updateWorldCoordinates(this.camera.x, this.camera.y);
 
@@ -324,16 +358,20 @@ export class Engine {
         if (p.type === 'ammo_shotgun') {
           this.player.addSpecificAmmo('SHOTGUN', p.value);
           this.particleSystem.emitSparks(p.x, p.y, '#ff0077', 16);
+          assetManager.playSound('sfx_pickup', 0.5);
         } else if (p.type === 'ammo_plasma') {
           this.player.addSpecificAmmo('ENERGY_BEAM', p.value);
           this.particleSystem.emitSparks(p.x, p.y, '#39ff14', 16);
+          assetManager.playSound('sfx_pickup', 0.5);
         } else if (p.type === 'exp') {
           const leveledUp = this.player.addExp(p.value);
           this.particleSystem.emitSparks(p.x, p.y, '#aa00ff', 12);
+          assetManager.playSound('sfx_pickup', 0.25);
           if (leveledUp) this.triggerLevelUp();
         } else if (p.type === 'heal') {
           this.player.hp = Math.min(this.player.maxHp, this.player.hp + p.value);
           this.particleSystem.emitSparks(p.x, p.y, '#00ff66', 14);
+          assetManager.playSound('sfx_pickup', 0.5);
         }
         this.pickups.splice(i, 1);
       }

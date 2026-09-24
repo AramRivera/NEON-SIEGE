@@ -2,6 +2,7 @@
 import { CONFIG } from '../config.js';
 import { Enemy } from '../ENTITIES/Enemy.js';
 import { Boss } from '../ENTITIES/Boss.js';
+import { assetManager } from './AssetManager.js';
 
 export class WaveManager {
   constructor(engine) {
@@ -13,7 +14,7 @@ export class WaveManager {
     this.waveActive = false;
   }
 
-  startWave(waveNumber) {
+    startWave(waveNumber) {
     this.currentWave = waveNumber;
     this.waveActive = true;
     this.enemiesToSpawn = Math.floor(
@@ -23,6 +24,9 @@ export class WaveManager {
       CONFIG.WAVES.MIN_SPAWN_INTERVAL,
       CONFIG.WAVES.INITIAL_SPAWN_INTERVAL - waveNumber * 0.1
     );
+
+    // ---- AUDIO: anuncio de nueva oleada ----
+    assetManager.playSound('sfx_wave_start', 0.5);
 
     // ¿Ronda de Jefe? (Cada 5 oleadas)
     if (waveNumber % CONFIG.WAVES.BOSS_INTERVAL === 0) {

@@ -307,3 +307,22 @@ th {
   background: #0b1220;
   color: #00f0ff;
 }
+
+/* Menú de Pausa */
+.pause-hint {
+  margin-top: 16px;
+  font-size: 11px;
+  letter-spacing: 1px;
+  color: #5a6b82;
+  text-transform: uppercase;
+}
+
+#modal-pause .modal-panel {
+  border-color: #ff0077;
+  box-shadow: 0 0 30px rgba(255, 0, 119, 0.3);
+}
+
+#modal-pause .title-cyan {
+  color: #ff0077;
+  text-shadow: 0 0 12px rgba(255, 0, 119, 0.6);
+}

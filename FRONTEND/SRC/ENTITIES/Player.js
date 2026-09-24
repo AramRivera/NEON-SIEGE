@@ -142,7 +142,14 @@ export class Player extends Entity {
       particleSystem.emitSparks(tipX, tipY, weapon.color, 4);
     }
 
-    assetManager.playSound('sfx_shoot', 0.25);
+     // ---- AUDIO: disparo específico según arma ----
+    if (this.currentWeaponKey === 'SHOTGUN') {
+      assetManager.playSound('sfx_shoot_shotgun', 0.4);
+    } else if (this.currentWeaponKey === 'ENERGY_BEAM') {
+      assetManager.playSound('sfx_shoot_plasma', 0.35);
+    } else {
+      assetManager.playSound('sfx_shoot', 0.22);
+    }
   }
 
   addExp(amount) {

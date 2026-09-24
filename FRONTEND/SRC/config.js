@@ -228,6 +228,7 @@ export const CONFIG = {
 
       // frontend/src/config.js (dentro de ASSETS.SPRITES)
       // Enemigos comunes (pueden ser hojas de 4 a 6 frames o PNG estático)
+      //ya
       enemy_hunter: {
         src: './assets/enemies/hunter.png',
         frameW: 64,
@@ -237,6 +238,7 @@ export const CONFIG = {
           attack: { row: 1, frames: 3, speed: 0.10 }
         }
       },
+      //ya
       enemy_ranger: {
         src: './assets/enemies/ranger.png',
         frameW: 64,
@@ -254,6 +256,7 @@ export const CONFIG = {
           walk: { row: 0, frames: 4, speed: 0.08 }
         }
       },
+      //ya
       enemy_tank: {
         src: './assets/enemies/tank.png',
         frameW: 96,
@@ -304,6 +307,8 @@ export const CONFIG = {
 
       // --- Jugador ---
       sfx_shoot:          './assets/audio/sfx/shoot.wav',
+      sfx_shoot_shotgun:  './assets/audio/sfx/shoot_shotgun.wav',
+      sfx_shoot_plasma:   './assets/audio/sfx/shoot_plasma.wav',
       sfx_dash:           './assets/audio/sfx/dash.wav',
       sfx_hit:            './assets/audio/sfx/hit.wav',
       sfx_pickup:         './assets/audio/sfx/pickup.wav',

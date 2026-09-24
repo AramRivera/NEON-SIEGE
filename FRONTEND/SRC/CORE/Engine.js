@@ -45,6 +45,7 @@ export class Engine {
 
     this.lastTime = performance.now();
     this.isPaused = false;
+    this._pauseKeyCooldown = false; // anti-rebote de la tecla de pausa
     this.isRunning = false;
     this.isGameOver = false;
 
@@ -56,6 +57,7 @@ export class Engine {
     this._setupUIListeners();
     this._spawnInitialPickups();
     this._setupAudioUnlock();
+    this._setupPauseMenu();
     window.addEventListener('resize', () => this.resizeCanvas());
   }
 
@@ -124,6 +126,85 @@ export class Engine {
     this.canvas.height = window.innerHeight;
     if (this.camera) {
       this.camera.resize(this.canvas.width, this.canvas.height);
+    }
+  }
+
+    // ------------------------------------------------------------
+  //  MENÚ DE PAUSA (ESC o P)
+  // ------------------------------------------------------------
+  _setupPauseMenu() {
+    // Detectar ESC / P para alternar pausa
+    window.addEventListener('keydown', (e) => {
+      if (e.code === 'Escape' || e.code === 'KeyP') {
+        if (e.repeat) return;
+        if (this.isGameOver) return;
+        // No pausar si hay un level-up pendiente
+        const lvlModal = document.getElementById('modal-levelup');
+        if (lvlModal && lvlModal.classList.contains('active')) return;
+        this.togglePause();
+      }
+    });
+
+    const btnResume = document.getElementById('btn-resume');
+    if (btnResume) btnResume.onclick = () => this.setPause(false);
+
+    const btnRestart = document.getElementById('btn-pause-restart');
+    if (btnRestart) btnRestart.onclick = () => window.location.reload();
+
+    const btnQuit = document.getElementById('btn-pause-quit');
+    if (btnQuit) btnQuit.onclick = () => window.location.reload();
+
+    // Sub-vista de ajustes dentro de la pausa
+    const btnSettings = document.getElementById('btn-pause-settings');
+    const btnBack = document.getElementById('btn-pause-back');
+    const viewMain = document.getElementById('pause-view');
+    const viewSettings = document.getElementById('pause-settings-view');
+    if (btnSettings) btnSettings.onclick = () => {
+      viewMain?.classList.remove('active');
+      viewSettings?.classList.add('active');
+    };
+    if (btnBack) btnBack.onclick = () => {
+      viewSettings?.classList.remove('active');
+      viewMain?.classList.add('active');
+    };
+
+    // Sincronizar controles de ajustes con el estado global
+    const chkAudio = document.getElementById('pause-audio');
+    const rngVolume = document.getElementById('pause-master-volume');
+    if (chkAudio) {
+      chkAudio.checked = CONFIG.ASSETS.USE_AUDIO;
+      chkAudio.onchange = async () => {
+        await assetManager.setAudioEnabled(chkAudio.checked);
+        const mainChk = document.getElementById('setting-audio');
+        if (mainChk) mainChk.checked = chkAudio.checked;
+      };
+    }
+    if (rngVolume) {
+      rngVolume.value = assetManager.masterVolume;
+      rngVolume.oninput = () => {
+        assetManager.setMasterVolume(parseFloat(rngVolume.value));
+        const mainRng = document.getElementById('setting-master-volume');
+        if (mainRng) mainRng.value = rngVolume.value;
+      };
+    }
+  }
+
+  togglePause() {
+    this.setPause(!this.isPaused);
+  }
+
+  setPause(paused) {
+    this.isPaused = paused;
+    const modal = document.getElementById('modal-pause');
+    if (modal) modal.classList.toggle('active', paused);
+
+    // Volver siempre a la vista principal al pausar
+    document.getElementById('pause-view')?.classList.add('active');
+    document.getElementById('pause-settings-view')?.classList.remove('active');
+
+    // ---- AUDIO: bajar la música al pausar ----
+    if (paused) {
+      assetManager.playSound('sfx_pickup', 0.15); // feedback sutil opcional
     }
   }
 

@@ -114,6 +114,36 @@
         <button id="btn-restart" class="btn-action btn-cyan">Reiniciar Partida</button>
       </div>
     </div>
+        <!-- MODAL DE PAUSA -->
+    <div id="modal-pause" class="modal-overlay">
+      <div class="modal-panel menu-panel">
+        <h2 class="title-cyan">◤ PAUSA ◢</h2>
+        <p class="subtitle">Simulación en espera — sistemas en standby</p>
+
+        <div id="pause-view" class="menu-view active">
+          <button id="btn-resume" class="neon-btn primary">REANUDAR</button>
+          <button id="btn-pause-settings" class="neon-btn">CONFIGURACIÓN</button>
+          <button id="btn-pause-restart" class="neon-btn">REINICIAR</button>
+          <button id="btn-pause-quit" class="neon-btn" style="border-color:#ff0077;color:#ff0077;">SALIR AL MENÚ</button>
+
+          <p class="pause-hint">Presiona ESC o P para reanudar</p>
+        </div>
+
+        <!-- Vista de ajustes dentro de la pausa -->
+        <div id="pause-settings-view" class="menu-view">
+          <h3 class="title-cyan">AJUSTES</h3>
+          <div class="setting-item">
+            <label for="pause-audio">Efectos de Sonido (SFX):</label>
+            <input type="checkbox" id="pause-audio">
+          </div>
+          <div class="setting-item">
+            <label for="pause-master-volume">Volumen Master:</label>
+            <input type="range" id="pause-master-volume" min="0" max="1" step="0.05" value="0.7">
+          </div>
+          <button id="btn-pause-back" class="btn-action btn-back">VOLVER</button>
+        </div>
+      </div>
+    </div>
   </div>
 
   <script type="module" src="./src/main.js"></script>

@@ -242,6 +242,7 @@ export class Engine {
   }
 
   update(dt) {
+    
     this.gameTime += dt;
     this.input.updateWorldCoordinates(this.camera.x, this.camera.y);
 

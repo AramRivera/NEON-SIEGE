@@ -2,45 +2,94 @@
 <html lang="es">
 <head>
   <meta charset="UTF-8">
-  <title>Neon Siege - Visual Map & Arena Editor</title>
+  <title>Neon Siege — Editor de Arenas v2</title>
   <link rel="stylesheet" href="./CSS/editor.css">
 </head>
 <body>
   <div id="sidebar">
-    <h2>Editor de Mapas</h2>
-    <p style="font-size:11px; color:#888;">Neon Siege Tooling</p>
+    <div class="brand">
+      <h2>◤ NEON SIEGE ◢</h2>
+      <p class="subtitle">Level & Arena Editor <span class="ver">v2.0</span></p>
+    </div>
 
+    <!-- 1. DIMENSIONES -->
     <div class="tool-section">
-      <h3>1. Dimensiones del Mapa</h3>
-      <div style="display:flex; gap:8px;">
-        <label style="font-size:11px; flex:1;">Ancho:
-          <input type="number" id="inp-width" value="2400" step="64" style="width:100%; background:#111; color:#00f0ff; border:1px solid #333; padding:4px;">
+      <h3>1 · Dimensiones</h3>
+      <div class="row">
+        <label class="mini">Ancho
+          <input type="number" id="inp-width" value="2400" step="64">
         </label>
-        <label style="font-size:11px; flex:1;">Alto:
-          <input type="number" id="inp-height" value="1800" step="64" style="width:100%; background:#111; color:#00f0ff; border:1px solid #333; padding:4px;">
+        <label class="mini">Alto
+          <input type="number" id="inp-height" value="1800" step="64">
         </label>
       </div>
       <button class="btn" id="btn-resize">Aplicar Tamaño</button>
     </div>
 
+    <!-- 2. PALETA -->
     <div class="tool-section">
-      <h3>2. Elemento Activo</h3>
+      <h3>2 · Paleta</h3>
       <div class="palette-grid" id="palette-container"></div>
     </div>
 
-    <div class="tool-section" style="margin-top:auto;">
-      <h3>3. Acciones de Mapa</h3>
-      <button class="btn" id="btn-export">Exportar JSON a Archivo</button>
-      <button class="btn" id="btn-copy">Copiar JSON al Portapapeles</button>
-      <button class="btn btn-pink" id="btn-import">Cargar JSON</button>
+    <!-- 3. PINCEL -->
+    <div class="tool-section">
+      <h3>3 · Pincel</h3>
+      <div class="row">
+        <label class="mini">Tamaño
+          <input type="number" id="inp-brush" value="1" min="1" max="20" step="1">
+        </label>
+        <label class="mini">Modo
+          <select id="sel-brush-mode">
+            <option value="paint">Pintar</option>
+            <option value="line">Línea</option>
+            <option value="rect">Rectángulo</option>
+            <option value="fill">Relleno</option>
+          </select>
+        </label>
+      </div>
+      <div class="row">
+        <label class="chk"><input type="checkbox" id="chk-grid" checked> Ver cuadrícula</label>
+      </div>
+    </div>
+
+    <!-- 4. ACCIONES -->
+    <div class="tool-section actions">
+      <h3>4 · Acciones</h3>
+      <div class="row">
+        <button class="btn btn-sm" id="btn-undo" title="Ctrl+Z">↶ Deshacer</button>
+        <button class="btn btn-sm" id="btn-redo" title="Ctrl+Y">↷ Rehacer</button>
+      </div>
+      <button class="btn" id="btn-export">⬇ Exportar JSON</button>
+      <button class="btn" id="btn-copy">⧉ Copiar JSON</button>
+      <button class="btn btn-pink" id="btn-import">⬆ Cargar JSON</button>
       <input type="file" id="file-input" accept=".json" style="display:none;">
-      <button class="btn btn-pink" id="btn-clear" style="margin-top:4px;">Limpiar Mapa</button>
+      <button class="btn btn-pink" id="btn-clear">✕ Limpiar Todo</button>
+    </div>
+
+    <!-- 5. ESTADÍSTICAS -->
+    <div class="tool-section stats">
+      <h3>Estadísticas</h3>
+      <div class="stat-grid" id="stats-container">
+        <span>Muros:</span><span id="stat-walls">0</span>
+        <span>Portales:</span><span id="stat-enemies">0</span>
+        <span>Municiones:</span><span id="stat-ammo">0</span>
+      </div>
     </div>
   </div>
 
   <div id="viewport">
     <canvas id="editorCanvas"></canvas>
-    <div id="info-bar">Cámara: X:0 Y:0 | Cursor: X:0 Y:0 | [Arrastrar Izq: Pintar | Der: Borrar | Rueda/MMB: Mover Cámara]</div>
+    <div id="zoom-controls">
+      <button id="btn-zoom-out">−</button>
+      <span id="zoom-level">100%</span>
+      <button id="btn-zoom-in">+</button>
+      <button id="btn-zoom-reset">⤢</button>
+    </div>
+    <div id="info-bar">Cámara: X:0 Y:0 | Mundo: X:0 Y:0 | Modo: Pintar</div>
+    <div id="help-bar">
+      <b>Izq:</b> pintar · <b>Der:</b> borrar · <b>MMB/Espacio:</b> mover cámara · <b>Rueda:</b> zoom · <b>Ctrl+Z:</b> deshacer
+    </div>
   </div>
 
   <script type="module" src="./SRC/TOOLS/MapEditor.js"></script>

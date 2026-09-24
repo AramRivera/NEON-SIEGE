@@ -27,6 +27,9 @@ export class Boss extends Entity {
     this.frameIndex = 0;
     this.frameTimer = 0;
     this.hitTimer = 0; // Efecto de parpadeo visual al ser dañado
+
+    // ---- AUDIO: control de golpes (throttle) ----
+    this._lastHitSfx = 0;
   }
 
   takeDamage(amount, engine) {
@@ -34,6 +37,13 @@ export class Boss extends Entity {
     this.hp -= amount;
     this.hitTimer = 0.08;
     engine.particleSystem.emitSparks(this.x, this.y, '#ff0077', 8);
+
+    // ---- AUDIO: impacto en el jefe (throttled, no saturar) ----
+    const now = performance.now();
+    if (now - this._lastHitSfx > 100) {
+      this._lastHitSfx = now;
+      assetManager.playSound('sfx_enemy_hit', 0.2);
+    }
 
     if (this.hp <= 0) {
       this.hp = 0;
@@ -58,7 +68,9 @@ export class Boss extends Entity {
     engine.pickups.push(new Pickup(this.x, this.y + 20, 'ammo_shotgun', 32, 'SHOTGUN'));
     engine.pickups.push(new Pickup(this.x, this.y - 20, 'ammo_plasma', 20, 'ENERGY_BEAM'));
 
-    assetManager.playSound('sfx_boom', 0.5);
+    // ---- AUDIO: explosión épica del jefe (doble golpe) ----
+    assetManager.playSound('sfx_boom', 0.7);
+    assetManager.playSound('sfx_boss_explode', 0.8);
   }
 
   _updateAnimation(dt) {
@@ -136,6 +148,9 @@ export class Boss extends Entity {
       this.state = 'attack';
       this.frameIndex = 0;
 
+      // ---- AUDIO: disparo pesado del jefe ----
+      assetManager.playSound('sfx_boss_shoot', 0.4);
+
       const count = fCfg.burstCount;
       for (let i = 0; i < count; i++) {
         const a = (Math.PI * 2 / count) * i;
@@ -151,6 +166,9 @@ export class Boss extends Entity {
       this.supportTimer = 0;
       this.state = 'special';
       this.frameIndex = 0;
+
+      // ---- AUDIO: invocación de refuerzos ----
+      assetManager.playSound('sfx_boss_summon', 0.45);
 
       for (let i = 0; i < 3; i++) {
         const ox = (Math.random() - 0.5) * 80;
@@ -174,6 +192,9 @@ export class Boss extends Entity {
       this.state = 'special';
       this.frameIndex = 0;
 
+      // ---- AUDIO: zumbido de teletransporte ----
+      assetManager.playSound('sfx_boss_teleport', 0.4);
+
       engine.particleSystem.emitExplosion(this.x, this.y, '#9400d3', 30);
       this.x = Math.max(150, Math.min(CONFIG.ARENA.WIDTH - 150, player.x + (Math.random() - 0.5) * 500));
       this.y = Math.max(150, Math.min(CONFIG.ARENA.HEIGHT - 150, player.y + (Math.random() - 0.5) * 500));
@@ -185,6 +206,9 @@ export class Boss extends Entity {
       this.supportTimer = 0;
       this.state = 'attack';
       this.frameIndex = 0;
+
+      // ---- AUDIO: disparo láser del jefe ----
+      assetManager.playSound('sfx_boss_shoot', 0.4);
 
       for (let k = 0; k < 5; k++) {
         const offset = (k - 2) * 0.18;

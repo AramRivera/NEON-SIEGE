@@ -5,6 +5,23 @@ import { Pickup } from './Pickup.js';
 import { assetManager } from '../SYSTEMS/AssetManager.js';
 import { SpriteRenderer } from '../SYSTEMS/SpriteRender.js';
 
+// ------------------------------------------------------------
+//  Control global de SFX de enemigos (anti-saturación de audio)
+// ------------------------------------------------------------
+const _sfxState = {
+  lastTime: {}  // key -> timestamp del último sonido reproducido
+};
+
+// Reproduce un SFX respetando un tiempo mínimo entre repeticiones (throttle)
+function sfxThrottled(key, volume = 0.3, minIntervalMs = 120) {
+  const now = performance.now();
+  const last = _sfxState.lastTime[key] || 0;
+  if (now - last < minIntervalMs) return false;
+  _sfxState.lastTime[key] = now;
+  assetManager.playSound(key, volume);
+  return true;
+}
+
 export class Enemy extends Entity {
   constructor(type, x, y, waveMultipliers = { hp: 1, damage: 1, speed: 1 }) {
     const base = CONFIG.ENEMIES[type];
@@ -33,6 +50,7 @@ export class Enemy extends Entity {
     // Variables específicas según arquetipo
     this.chargeDir = { x: 0, y: 0 };
     this.primeTimer = 0;
+    this.primeBeepTimer = 0; // Pitidos durante la cuenta atrás del kamikaze
   }
 
   takeDamage(amount, engine) {
@@ -41,6 +59,9 @@ export class Enemy extends Entity {
     this.hp -= amount;
     this.hitTimer = 0.08; // Flash visual de impacto
     engine.particleSystem.emitSparks(this.x, this.y, this.color, 4);
+
+    // ---- AUDIO: impacto en enemigo (throttled para no saturar) ----
+    sfxThrottled('sfx_enemy_hit', 0.18, 90);
 
     if (this.hp <= 0) {
       this.hp = 0;
@@ -67,7 +88,10 @@ export class Enemy extends Entity {
       engine.pickups.push(new Pickup(this.x, this.y - 8, 'heal', 20));
     }
 
-    assetManager.playSound('sfx_boom', 0.2);
+    // ---- AUDIO: explosión al morir (throttled: muchos enemigos mueren juntos) ----
+    sfxThrottled('sfx_boom', 0.2, 70);
+    // Sonido de explosión específico de enemigo (más agudo)
+    sfxThrottled('sfx_enemy_explode', 0.25, 70);
   }
 
   _updateAnimation(dt) {
@@ -198,6 +222,8 @@ export class Enemy extends Entity {
 
         if (dist <= this.radius + player.radius) {
           player.takeDamage(this.damage, engine.particleSystem);
+          // ---- AUDIO: mordisco de swarm (muy throttled, hay muchos) ----
+          sfxThrottled('sfx_enemy_attack', 0.12, 250);
         }
         break;
       }
@@ -211,6 +237,8 @@ export class Enemy extends Entity {
           this.frameIndex = 0;
           this.stateTimer = base.chargeDuration;
           this.chargeDir = { x: dirX, y: dirY };
+          // ---- AUDIO: rugido de carga del tanque ----
+          assetManager.playSound('sfx_tank_charge', 0.45);
         }
         break;
 
@@ -222,6 +250,7 @@ export class Enemy extends Entity {
           this.animState = 'attack';
           this.frameIndex = 0;
           this.primeTimer = base.primeTime;
+          this.primeBeepTimer = 0;
         }
         break;
     }
@@ -235,6 +264,8 @@ export class Enemy extends Entity {
         player.takeDamage(this.damage, engine.particleSystem);
         this.cooldownTimer = base.attackCooldown;
         this.state = 'CHASE';
+        // ---- AUDIO: zarpazo del cazador ----
+        sfxThrottled('sfx_enemy_attack', 0.25, 150);
         break;
 
       case 'RANGER': {
@@ -254,6 +285,8 @@ export class Enemy extends Entity {
         }
         this.cooldownTimer = base.shootCooldown;
         this.state = 'CHASE';
+        // ---- AUDIO: disparo del ranger ----
+        sfxThrottled('sfx_enemy_shoot', 0.28, 110);
         break;
       }
 
@@ -277,8 +310,19 @@ export class Enemy extends Entity {
         this.primeTimer -= dt;
         this.color = Math.floor(Date.now() / 70) % 2 === 0 ? '#ffffff' : '#ff0055';
 
+        // ---- AUDIO: pitido de cuenta atrás (acelera al final) ----
+        this.primeBeepTimer -= dt;
+        if (this.primeBeepTimer <= 0) {
+          // Intervalo acelera conforme se acerca la explosión
+          const ratio = Math.max(0, this.primeTimer / base.primeTime);
+          this.primeBeepTimer = 0.08 + 0.22 * ratio;
+          assetManager.playSound('sfx_kamikaze_beep', 0.35);
+        }
+
         if (this.primeTimer <= 0) {
           engine.particleSystem.emitExplosion(this.x, this.y, '#ff0055', 45);
+          // ---- AUDIO: gran explosión del kamikaze ----
+          assetManager.playSound('sfx_enemy_explode', 0.6);
           if (dist <= base.explosionRadius) {
             player.takeDamage(this.damage, engine.particleSystem);
           }

@@ -92,24 +92,43 @@ export class MainMenu {
   async _fetchLeaderboard() {
     this.lbBody.innerHTML = '<tr><td colspan="4" style="text-align:center;">Conectando a la base de datos...</td></tr>';
     try {
-      const res = await fetch('http://localhost:4000/api/leaderboard');
+      const res = await fetch('http://localhost:4000/api/scores');
       if (!res.ok) throw new Error('Error al consultar ranking');
-      const data = await res.json();
+      const responseData = await res.json();
 
-      if (!data || data.length === 0) {
+      // Ge eba karabo e tla ka gare ga { data: [...] } goba { scores: [...] }
+      const list = Array.isArray(responseData) 
+        ? responseData 
+        : (responseData.scores || responseData.data || []);
+
+      // Hlahloba mo console ya browser (F12) go bona maina a maleba a dikholomo
+      console.log('[Leaderboard API Data]:', list);
+
+      if (!list || list.length === 0) {
         this.lbBody.innerHTML = '<tr><td colspan="4" style="text-align:center;">Aún no hay puntuaciones registradas.</td></tr>';
         return;
       }
 
-      this.lbBody.innerHTML = data.slice(0, 10).map((row, idx) => `
-        <tr>
-          <td style="color: #ffd700; text-align:center;">${idx + 1}</td>
-          <td>${row.username || row.player_name || 'Piloto Anónimo'}</td>
-          <td style="color: #00f0ff; font-weight: bold;">${row.score.toLocaleString()}</td>
-          <td style="text-align:center;">${row.wave_reached || row.wave || 1}</td>
-        </tr>
-      `).join('');
+      this.lbBody.innerHTML = list.slice(0, 10).map((row, idx) => {
+        // E leka maina ka moka a tlwaelegilego a dikholomo tša PostgreSQL
+        const pilotName = row.name 
+          || row.player 
+          || 'Piloto Anónimo';
+
+        const scoreVal = Number(row.score || row.points || 0);
+        const waveVal = row.wave_reached || row.wave || row.oleada || 1;
+
+        return `
+          <tr>
+            <td style="color: #ffd700; text-align:center;">${idx + 1}</td>
+            <td>${pilotName}</td>
+            <td style="color: #00f0ff; font-weight: bold;">${scoreVal.toLocaleString()}</td>
+            <td style="text-align:center;">${waveVal}</td>
+          </tr>
+        `;
+      }).join('');
     } catch (err) {
+      console.error('[Leaderboard Error]:', err);
       this.lbBody.innerHTML = '<tr><td colspan="4" style="color:#ff0055; text-align:center;">No se pudo conectar al API (puerto 4000).</td></tr>';
     }
   }

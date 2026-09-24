@@ -10,6 +10,60 @@
   <div id="game-container">
     <canvas id="gameCanvas"></canvas>
 
+    <!-- MENÚ PRINCIPAL (START MENU) -->
+    <div id="main-menu-overlay" class="modal-overlay active">
+      <div class="modal-panel menu-panel">
+        <h1 class="game-title">NEON SIEGE</h1>
+        <p class="game-subtitle">ARENA SURVIVAL</p>
+
+        <!-- Vista 1: Navegación Principal -->
+        <div id="menu-main-view" class="menu-view active">
+          <button id="btn-play" class="neon-btn primary">JUGAR</button>
+          <button id="btn-leaderboard" class="neon-btn">RANKING</button>
+          <button id="btn-settings" class="neon-btn">CONFIGURACIÓN</button>
+        </div>
+
+        <!-- Vista 2: Leaderboard (PostgreSQL API) -->
+        <div id="menu-leaderboard-view" class="menu-view">
+          <h3 class="title-cyan">TOP 10 PILOTOS GLOBALES</h3>
+          <div class="table-wrapper menu-table-wrapper">
+            <table>
+              <thead>
+                <tr>
+                  <th>#</th>
+                  <th>Piloto</th>
+                  <th>Score</th>
+                  <th>Oleada</th>
+                </tr>
+              </thead>
+              <tbody id="leaderboard-body">
+                <tr><td colspan="4" style="text-align:center;">Cargando ranking...</td></tr>
+              </tbody>
+            </table>
+          </div>
+          <button id="btn-back-lb" class="btn-action btn-back">VOLVER</button>
+        </div>
+
+        <!-- Vista 3: Ajustes -->
+        <div id="menu-settings-view" class="menu-view">
+          <h3 class="title-cyan">SISTEMA & PREFERENCIAS</h3>
+          <div class="setting-item">
+            <label for="setting-audio">Efectos de Sonido (SFX):</label>
+            <input type="checkbox" id="setting-audio">
+          </div>
+          <div class="setting-item">
+            <label for="setting-screenshake">Vibración de Cámara:</label>
+            <input type="checkbox" id="setting-screenshake" checked>
+          </div>
+          <div class="setting-item">
+            <label for="setting-master-volume">Volumen Master:</label>
+            <input type="range" id="setting-master-volume" min="0" max="1" step="0.05" value="0.7">
+          </div>
+          <button id="btn-back-settings" class="btn-action btn-back">VOLVER</button>
+        </div>
+      </div>
+    </div>
+
     <!-- MODAL DE LEVEL UP (PAUSA EL JUEGO) -->
     <div id="modal-levelup" class="modal-overlay">
       <div class="modal-panel">

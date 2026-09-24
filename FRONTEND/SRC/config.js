@@ -181,7 +181,7 @@ export const CONFIG = {
   // frontend/src/config.js (dentro de CONFIG)
   ASSETS: {
     USE_IMAGE_SPRITES: true,
-    USE_AUDIO: false,
+    USE_AUDIO: true,
     SPRITES: {
       // Suelo y entorno
       tile_floor: './assets/tiles/floor_metal.png',
@@ -298,12 +298,34 @@ export const CONFIG = {
         }
       }
     },
-    AUDIO: {
-      bgm_arena: './assets/audio/bgm/arena_theme.mp3',
-      sfx_shoot: './assets/audio/sfx/shoot.wav',
-      sfx_dash:  './assets/audio/sfx/dash.wav',
-      sfx_hit:   './assets/audio/sfx/hit.wav',
-      sfx_boom:  './assets/audio/sfx/explosion.wav'
+         AUDIO: {
+      // --- Música ---
+      bgm_arena:          './assets/audio/bgm/arena_theme.mp3',
+
+      // --- Jugador ---
+      sfx_shoot:          './assets/audio/sfx/shoot.wav',
+      sfx_dash:           './assets/audio/sfx/dash.wav',
+      sfx_hit:            './assets/audio/sfx/hit.wav',
+      sfx_pickup:         './assets/audio/sfx/pickup.wav',
+      sfx_levelup:        './assets/audio/sfx/levelup.wav',
+      sfx_wave_start:     './assets/audio/sfx/wave_start.wav',
+
+      // --- Enemigos ---
+      sfx_enemy_shoot:    './assets/audio/sfx/enemy_shoot.wav',
+      sfx_enemy_attack:   './assets/audio/sfx/enemy_attack.wav',
+      sfx_enemy_hit:      './assets/audio/sfx/enemy_hit.wav',
+      sfx_enemy_explode:  './assets/audio/sfx/enemy_explode.wav',
+      sfx_tank_charge:    './assets/audio/sfx/tank_charge.wav',
+      sfx_kamikaze_beep:  './assets/audio/sfx/kamikaze_beep.wav',
+
+      // --- Jefes ---
+      sfx_boss_shoot:     './assets/audio/sfx/boss_shoot.wav',
+      sfx_boss_summon:    './assets/audio/sfx/boss_summon.wav',
+      sfx_boss_teleport:  './assets/audio/sfx/boss_teleport.wav',
+      sfx_boss_explode:   './assets/audio/sfx/boss_explode.wav',
+
+      // --- Genéricos ---
+      sfx_boom:           './assets/audio/sfx/explosion.wav'
     }
   }
 };

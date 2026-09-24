@@ -1,8 +1,25 @@
-// frontend/src/systems/SpriteRenderer.js
-import { assetManager } from '../SYSTEMS/AssetManager.js';
+// frontend/src/systems/SpriteRender.js
+// ============================================================
+//  SpriteRenderer — Motor de dibujo de sprites y animaciones
+//  ------------------------------------------------------------
+//  Soporta DOS modos de animación:
+//    1) SPRITE SHEET  → una imagen con grilla fila/columna (recomendado)
+//    2) FRAME BY FRAME → un array de imágenes independientes
+//
+//  Reglas de robustez implementadas aquí:
+//    - Fuerza frames ENTEROS (evita el "salto" por decimales como 204.8).
+//    - Pivot/anclaje configurable por asset (anchorX, anchorY).
+//    - Anclaje por defecto "abajo-centro" (los pies al suelo, top-down).
+//    - Validación defensiva: si el sheet no cuadra, no rompe el render.
+// ============================================================
+
+import { assetManager } from './AssetManager.js';
 import { CONFIG } from '../config.js';
 
 export class SpriteRenderer {
+  // ------------------------------------------------------------
+  //  SOMBRA proyectada bajo la entidad
+  // ------------------------------------------------------------
   static drawShadow(ctx, x, y, radius) {
     ctx.save();
     ctx.fillStyle = 'rgba(0, 0, 0, 0.45)';
@@ -12,6 +29,9 @@ export class SpriteRenderer {
     ctx.restore();
   }
 
+  // ------------------------------------------------------------
+  //  SPRITE ESTÁTICO (imagen única, sin animación)
+  // ------------------------------------------------------------
   static drawEntitySprite({
     ctx,
     imageKey,
@@ -35,6 +55,9 @@ export class SpriteRenderer {
     return true;
   }
 
+  // ------------------------------------------------------------
+  //  SPRITE ANIMADO (acepta spritesheets y frames individuales)
+  // ------------------------------------------------------------
   static drawAnimatedSprite({
     ctx,
     imageKey,
@@ -52,28 +75,78 @@ export class SpriteRenderer {
     if (!img) return false;
 
     const meta = CONFIG.ASSETS.SPRITES[imageKey];
+
+    // --- Caso A: sin metadatos → tratar como sprite estático
     if (!meta || !meta.animations) {
       return this.drawEntitySprite({ ctx, imageKey, x, y, width, height, angle, flipX, yOffset });
     }
 
-    const anim = meta.animations[animState] || meta.animations['idle'];
-    const fw = meta.frameW || (img.width / 6);
-    const fh = meta.frameH || (img.height / 5);
+    // --- Resolver la animación solicitada (con fallback a idle / la primera)
+    const anim = meta.animations[animState]
+      || meta.animations['idle']
+      || meta.animations[Object.keys(meta.animations)[0]];
+    if (!anim) {
+      return this.drawEntitySprite({ ctx, imageKey, x, y, width, height, angle, flipX, yOffset });
+    }
 
-    // Recorte dentro del spritesheet de 1536x1024
-    const sx = (frameIndex % anim.frames) * fw;
-    const sy = anim.row * fh;
+    // ========================================================
+    //  MODO SPRITE SHEET (tiene frameW / frameH definidos)
+    // ========================================================
+    if (meta.frameW && meta.frameH) {
+      // 1. Forzar frames ENTEROS (elimina saltos por decimales)
+      const fw = Math.floor(meta.frameW);
+      const fh = Math.floor(meta.frameH);
 
-    ctx.save();
-    ctx.translate(x, y + yOffset);
+      // 2. Frame seguro dentro del rango de la animación (módulo positivo)
+      const total = Math.max(1, anim.frames | 0);
+      const idx = ((frameIndex % total) + total) % total;
 
-    // Espejo horizontal (Opción A)
-    if (flipX) ctx.scale(-1, 1);
-    if (angle !== 0 && !flipX) ctx.rotate(angle);
+      // 3. Coordenadas de recorte dentro del sheet
+      const sx = idx * fw;
+      const sy = (anim.row | 0) * fh;
 
-    // Dibujar escalado a pantalla
-    ctx.drawImage(img, sx, sy, fw, fh, -width / 2, -height / 2, width, height);
-    ctx.restore();
-    return true;
+      // 4. Validación defensiva: no recortar fuera de la imagen
+      if (sx + fw > img.width + 0.5 || sy + fh > img.height + 0.5) {
+        return this.drawEntitySprite({ ctx, imageKey, x, y, width, height, angle, flipX, yOffset });
+      }
+
+      // 5. Pivote (anclaje). Por defecto abajo-centro estilo top-down.
+      const ax = (meta.anchorX !== undefined) ? meta.anchorX : 0.5; // 0=izq, 0.5=centro, 1=der
+      const ay = (meta.anchorY !== undefined) ? meta.anchorY : 0.85; // 0=arriba, 1=abajo
+
+      ctx.save();
+      ctx.translate(x, y + yOffset);
+      if (flipX) ctx.scale(-1, 1);
+      if (angle !== 0 && !flipX) ctx.rotate(angle);
+      ctx.drawImage(img, sx, sy, fw, fh, -width * ax, -height * ay, width, height);
+      ctx.restore();
+      return true;
+    }
+
+    // ========================================================
+    //  MODO FRAME BY FRAME (array de imágenes independientes)
+    //  meta.frames = ['./a.png', './b.png', ...]
+    // ========================================================
+    if (meta.frames && Array.isArray(meta.frames)) {
+      const total = meta.frames.length;
+      if (total === 0) return false;
+      const idx = ((frameIndex % total) + total) % total;
+      const frameImg = assetManager.getImage(`${imageKey}__${idx}`);
+      if (!frameImg) return false;
+
+      const ax = (meta.anchorX !== undefined) ? meta.anchorX : 0.5;
+      const ay = (meta.anchorY !== undefined) ? meta.anchorY : 0.85;
+
+      ctx.save();
+      ctx.translate(x, y + yOffset);
+      if (flipX) ctx.scale(-1, 1);
+      if (angle !== 0 && !flipX) ctx.rotate(angle);
+      ctx.drawImage(frameImg, -width * ax, -height * ay, width, height);
+      ctx.restore();
+      return true;
+    }
+
+    // --- Fallback final
+    return this.drawEntitySprite({ ctx, imageKey, x, y, width, height, angle, flipX, yOffset });
   }
 }

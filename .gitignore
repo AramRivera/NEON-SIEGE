@@ -1,0 +1,39 @@
+# ============================================================
+#  Neon Siege: Arena Survival — .gitignore raíz del repositorio
+# ============================================================
+
+# --- Dependencias de Node.js ---
+node_modules/
+BACKEND/node_modules/
+server/node_modules/
+
+# --- Variables de entorno (NUNCA subir credenciales) ---
+.env
+.env.*
+!.env.example
+
+# --- Logs ---
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# --- Archivos temporales del sistema operativo ---
+.DS_Store
+Thumbs.db
+Desktop.ini
+
+# --- Configuración del editor ---
+.vscode/*
+!.vscode/settings.json
+.idea/
+
+# --- Caché / build ---
+dist/
+build/
+.cache/
+
+# --- Datos locales generados en tiempo de ejecución ---
+# (En caso de que se implemente el almacenamiento en archivos JSON)
+data/scores.json
+*.tmp

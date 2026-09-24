@@ -2,112 +2,532 @@
 <html lang="es">
 <head>
   <meta charset="UTF-8">
-  <title>Ajustador de Spritesheet a Medidas Exactas</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Neon Siege — Empaquetador de Sprite Sheets</title>
   <style>
-    body { background: #080c16; color: #00f0ff; font-family: monospace; padding: 20px; }
-    .box { border: 1px dashed #00f0ff; padding: 15px; margin-bottom: 20px; max-width: 600px; }
-    button { background: #00f0ff; color: #000; font-weight: bold; border: none; padding: 10px 16px; cursor: pointer; margin-top: 10px; }
-    canvas { border: 1px solid #ff0077; background: transparent; display: block; margin-top: 10px; }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      background: #080c16;
+      color: #c0d0e0;
+      font-family: 'Consolas', 'Courier New', monospace;
+      font-size: 13px;
+      padding: 16px;
+    }
+    h1 { color: #00f0ff; font-size: 18px; letter-spacing: 2px; margin-bottom: 4px; }
+    h2 { color: #00f0ff; font-size: 14px; margin: 14px 0 8px; }
+    p.hint { color: #6a7a90; font-size: 11px; line-height: 1.5; margin-bottom: 8px; }
+    .layout { display: flex; gap: 20px; align-items: flex-start; flex-wrap: wrap; }
+
+    .panel {
+      background: #0d1424;
+      border: 1px solid #1a273d;
+      border-radius: 6px;
+      padding: 14px;
+    }
+    .panel-left { width: 360px; }
+    .panel-right { flex: 1; min-width: 420px; }
+
+    .row { display: flex; gap: 8px; align-items: center; margin-bottom: 8px; }
+    .row label { flex: 1; color: #8fa0b5; font-size: 11px; }
+
+    input[type="number"], input[type="text"], select {
+      background: #050811;
+      color: #00f0ff;
+      border: 1px solid #1e304f;
+      padding: 5px 7px;
+      border-radius: 4px;
+      font-family: inherit;
+      font-size: 12px;
+      width: 70px;
+    }
+    select { width: 100%; }
+
+    button {
+      background: #00f0ff;
+      color: #050811;
+      border: none;
+      font-family: inherit;
+      font-weight: bold;
+      font-size: 12px;
+      padding: 8px 14px;
+      border-radius: 4px;
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+    button:hover { box-shadow: 0 0 12px #00f0ff; }
+    button.secondary { background: #141f33; color: #00f0ff; border: 1px solid #1e304f; }
+    button.danger { background: #ff0055; color: #fff; }
+    button:disabled { opacity: 0.4; cursor: not-allowed; box-shadow: none; }
+
+    #dropZone {
+      border: 2px dashed #1e304f;
+      border-radius: 6px;
+      padding: 18px;
+      text-align: center;
+      color: #6a7a90;
+      font-size: 12px;
+      cursor: pointer;
+      transition: all 0.15s;
+      margin-bottom: 10px;
+    }
+    #dropZone.drag-over { border-color: #00f0ff; background: rgba(0,240,255,0.05); color: #00f0ff; }
+
+    .anim-block { margin-bottom: 10px; border: 1px solid #1a273d; border-radius: 4px; padding: 8px; }
+    .anim-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px; }
+    .anim-name { color: #ff0077; font-weight: bold; font-size: 12px; }
+    .anim-info { color: #6a7a90; font-size: 10px; }
+
+    .frames-strip { display: flex; gap: 4px; flex-wrap: wrap; margin-top: 6px; }
+    .frame-slot {
+      width: 48px; height: 48px;
+      background: #050811;
+      border: 1px solid #1e304f;
+      border-radius: 3px;
+      position: relative;
+      display: flex; align-items: center; justify-content: center;
+      cursor: pointer;
+      background-image:
+        linear-gradient(45deg, #0c1220 25%, transparent 25%),
+        linear-gradient(-45deg, #0c1220 25%, transparent 25%),
+        linear-gradient(45deg, transparent 75%, #0c1220 75%),
+        linear-gradient(-45deg, transparent 75%, #0c1220 75%);
+      background-size: 8px 8px;
+      background-position: 0 0, 0 4px, 4px -4px, -4px 0;
+    }
+    .frame-slot.filled { border-color: #00f0ff; }
+    .frame-slot img { width: 100%; height: 100%; image-rendering: pixelated; object-fit: contain; }
+    .frame-slot .idx { position: absolute; bottom: 1px; left: 2px; font-size: 8px; color: #6a7a90; }
+
+    #sheetPreview {
+      border: 1px solid #ff0077;
+      background-image:
+        linear-gradient(45deg, #141f33 25%, transparent 25%),
+        linear-gradient(-45deg, #141f33 25%, transparent 25%),
+        linear-gradient(45deg, transparent 75%, #141f33 75%),
+        linear-gradient(-45deg, transparent 75%, #141f33 75%);
+      background-size: 16px 16px;
+      background-position: 0 0, 0 8px, 8px -8px, -8px 0;
+      display: block;
+      max-width: 100%;
+      image-rendering: pixelated;
+    }
+
+    .stats { color: #8fa0b5; font-size: 11px; line-height: 1.6; }
+    .stats b { color: #00f0ff; }
+
+    textarea {
+      width: 100%;
+      height: 220px;
+      background: #050811;
+      color: #39ff14;
+      border: 1px solid #1e304f;
+      border-radius: 4px;
+      font-family: inherit;
+      font-size: 11px;
+      padding: 8px;
+      resize: vertical;
+    }
+
+    .badge { display: inline-block; padding: 2px 6px; border-radius: 3px; font-size: 10px; }
+    .badge.ok { background: #003d1f; color: #39ff14; }
+    .badge.warn { background: #3d2f00; color: #ffd700; }
+    .badge.err { background: #3d0018; color: #ff0055; }
   </style>
 </head>
 <body>
-  <h2>Ajustador a Medidas Exactas de Motor (64x64 px)</h2>
-  
-  <div class="box">
-    <p>1. Selecciona la imagen que descargaste (con fondo de ajedrez o resolución desfasada):</p>
-    <input type="file" id="imgInput" accept="image/*">
-  </div>
+  <h1>NEON SIEGE — EMPAQUETADOR DE SPRITE SHEETS</h1>
+  <p class="hint">Recorta tus frames manualmente en Photoshop (mismo tamaño por entidad) y súbelos aquí. La herramienta los coloca en una grilla exacta y exporta un PNG perfecto para el motor.</p>
 
-  <div class="box">
-    <p>2. Elige el formato a generar:</p>
-    <button onclick="procesarPiernas()">Generar player_legs.png (384x256 px)</button>
-    <button onclick="procesarTorso()">Generar player_torso.png (64x64 px)</button>
-    <button onclick="procesarClasico()">Generar player_sheet.png (384x320 px)</button>
-  </div>
+  <div class="layout">
+    <!-- PANEL IZQUIERDO: CONFIGURACIÓN -->
+    <div class="panel panel-left">
+      <h2>1. Configuración de la grilla</h2>
+      <div class="row">
+        <label>Ancho de frame (px):</label>
+        <input type="number" id="cfgFrameW" value="64" min="8" max="512">
+      </div>
+      <div class="row">
+        <label>Alto de frame (px):</label>
+        <input type="number" id="cfgFrameH" value="64" min="8" max="512">
+      </div>
+      <div class="row">
+        <label>Columnas (máx frames por fila):</label>
+        <input type="number" id="cfgCols" value="6" min="1" max="20">
+      </div>
+      <div class="row">
+        <label>Filas:</label>
+        <input type="number" id="cfgRows" value="5" min="1" max="20">
+      </div>
 
-  <canvas id="outCanvas"></canvas>
+      <p class="hint" style="margin-top:10px;">Al cambiar filas/columnas se reinicia el lienzo. Configura primero la grilla del personaje o entidad.</p>
+      <button id="btnApplyGrid">Aplicar grilla</button>
+      <span id="gridStatus"></span>
+
+      <h2>2. Mapa de animaciones → filas</h2>
+      <p class="hint">Asigna qué animación ocupa cada fila. El motor leerá <code>row</code> y <code>frames</code>.</p>
+      <div id="rowMapContainer"></div>
+
+      <h2>3. Subir frames</h2>
+      <div class="row">
+        <label>Animación destino:</label>
+        <select id="targetAnim"></select>
+      </div>
+      <div id="dropZone">
+        <b>Haz clic o arrastra aquí tus PNG</b><br>
+        <small>(se añaden como frames de la animación seleccionada, en orden alfabético)</small>
+        <input type="file" id="fileInput" accept="image/*" multiple hidden>
+      </div>
+      <button class="secondary" id="btnClearAnim">Vaciar animación actual</button>
+      <button class="danger" id="btnClearAll">Vaciar todo</button>
+    </div>
+
+    <!-- PANEL DERECHO: PREVIEW Y EXPORT -->
+    <div class="panel panel-right">
+      <h2>Vista previa del Sprite Sheet</h2>
+      <p class="stats" id="sheetStats"></p>
+      <div style="overflow:auto; max-height:520px; margin:10px 0; border:1px solid #1a273d;">
+        <canvas id="sheetPreview"></canvas>
+      </div>
+
+      <div class="row">
+        <button id="btnExport">Exportar PNG</button>
+        <input type="text" id="exportName" value="player_sheet.png" style="width:220px;">
+      </div>
+
+      <h2>Crear / editar animaciones</h2>
+      <div class="row">
+        <input type="text" id="newAnimName" placeholder="nombre (walk, attack...)" style="width:180px;">
+        <button class="secondary" id="btnAddAnim">Añadir animación</button>
+      </div>
+
+      <h2>config.js generado</h2>
+      <p class="hint">Copia este bloque dentro de <code>CONFIG.ASSETS.SPRITES</code>.</p>
+      <button class="secondary" id="btnGenConfig">Generar configuración</button>
+      <textarea id="configOut" readonly spellcheck="false"></textarea>
+    </div>
+  </div>
 
   <script>
-    let rawImg = new Image();
-    const cv = document.getElementById('outCanvas');
-    const ctx = cv.getContext('2d');
+    // ============================================================
+    //  ESTADO GLOBAL DE LA HERRAMIENTA
+    // ============================================================
+    const state = {
+      frameW: 64,
+      frameH: 64,
+      cols: 6,
+      rows: 5,
+      // Cada animación: { row, frames: [ {img: Image | null} ] }
+      anims: {
+        idle:   { row: 0, frames: [] },
+        walk:   { row: 1, frames: [] },
+        attack: { row: 2, frames: [] },
+        hurt:   { row: 3, frames: [] },
+        die:    { row: 4, frames: [] }
+      },
+      currentAnim: 'idle'
+    };
 
-    document.getElementById('imgInput').addEventListener('change', (e) => {
-      const file = e.target.files[0];
-      if (!file) return;
-      const reader = new FileReader();
-      reader.onload = (ev) => {
-        rawImg.onload = () => alert(`Imagen cargada (${rawImg.width}x${rawImg.height} px). Lista para exportar con medidas exactas.`);
-        rawImg.src = ev.target.result;
-      };
-      reader.readAsDataURL(file);
-    });
+    const $ = (id) => document.getElementById(id);
+    const canvas = $('sheetPreview');
+    const ctx = canvas.getContext('2d');
 
-    // Elimina el falso fondo de cuadros de ajedrez convirtiendo grises neutros a transparente
-    function quitarFalsoAjedrez(context, w, h) {
-      const imgData = context.getImageData(0, 0, w, h);
-      const d = imgData.data;
-      for (let i = 0; i < d.length; i += 4) {
-        const r = d[i], g = d[i+1], b = d[i+2];
-        // Detecta los tonos típicos del patrón de ajedrez simulado (grises entre 170 y 235 donde R=G=B)
-        const esGris = Math.abs(r - g) < 8 && Math.abs(g - b) < 8;
-        if (esGris && r > 150) {
-          d[i + 3] = 0; // Transparente
-        }
-      }
-      context.putImageData(imgData, 0, 0);
+    // ============================================================
+    //  UTILIDADES
+    // ============================================================
+    function loadImageFile(file) {
+      return new Promise((resolve) => {
+        const reader = new FileReader();
+        reader.onload = (ev) => {
+          const img = new Image();
+          img.onload = () => resolve(img);
+          img.onerror = () => resolve(null);
+          img.src = ev.target.result;
+        };
+        reader.readAsDataURL(file);
+      });
     }
 
-    function descargar(nombre) {
+    // ============================================================
+    //  RENDER DE LA VISTA PREVIA (dibuja la grilla exacta)
+    // ============================================================
+    function drawPreview() {
+      canvas.width = state.cols * state.frameW;
+      canvas.height = state.rows * state.frameH;
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+      // 1. Dibujar cada animación en su fila
+      for (const animName of Object.keys(state.anims)) {
+        const anim = state.anims[animName];
+        const row = anim.row;
+        if (row < 0 || row >= state.rows) continue;
+        anim.frames.forEach((frame, col) => {
+          if (col >= state.cols) return;
+          if (!frame || !frame.img) return;
+          const dx = col * state.frameW;
+          const dy = row * state.frameH;
+          fitDraw(frame.img, dx, dy, state.frameW, state.frameH, frame.offX || 0, frame.offY || 0);
+        });
+      }
+
+      // 2. Dibujar las guías de grilla (sutil)
+      ctx.save();
+      ctx.strokeStyle = 'rgba(0,240,255,0.18)';
+      ctx.lineWidth = 1;
+      for (let x = 0; x <= state.cols; x++) {
+        ctx.beginPath(); ctx.moveTo(x * state.frameW + 0.5, 0); ctx.lineTo(x * state.frameW + 0.5, canvas.height); ctx.stroke();
+      }
+      for (let y = 0; y <= state.rows; y++) {
+        ctx.beginPath(); ctx.moveTo(0, y * state.frameH + 0.5); ctx.lineTo(canvas.width, y * state.frameH + 0.5); ctx.stroke();
+      }
+      ctx.restore();
+
+      // 3. Estadísticas
+      const filled = countFilledFrames();
+      const expected = state.frameW * state.cols;
+      const expectedH = state.frameH * state.rows;
+      const isSquare = (expected % state.cols === 0) && (expectedH % state.rows === 0) &&
+                       Number.isInteger(state.frameW) && Number.isInteger(state.frameH);
+      $('sheetStats').innerHTML =
+        `Dimensiones: <b>${canvas.width} × ${canvas.height} px</b> · Frame: <b>${state.frameW}×${state.frameH}</b> · ` +
+        `Grilla: <b>${state.cols} × ${state.rows}</b> · Frames colocados: <b>${filled}</b> ` +
+        (isSquare ? '<span class="badge ok">Grilla entera OK</span>' : '<span class="badge err">Revisar decimales</span>');
+    }
+
+    // Escala la imagen manteniendo aspecto y permitiendo offset fino
+    function fitDraw(img, dx, dy, w, h, offX, offY) {
+      const scale = Math.min(w / img.width, h / img.height);
+      const dw = img.width * scale;
+      const dh = img.height * scale;
+      const x = dx + (w - dw) / 2 + offX;
+      const y = dy + (h - dh) / 2 + offY;
+      ctx.drawImage(img, x, y, dw, dh);
+    }
+
+    function countFilledFrames() {
+      let n = 0;
+      for (const a of Object.values(state.anims)) n += a.frames.filter(f => f && f.img).length;
+      return n;
+    }
+
+    // ============================================================
+    //  CONSTRUCCIÓN DE LA UI
+    // ============================================================
+    function buildRowMap() {
+      const cont = $('rowMapContainer');
+      cont.innerHTML = '';
+      for (const animName of Object.keys(state.anims)) {
+        const block = document.createElement('div');
+        block.className = 'anim-block';
+        block.innerHTML = `
+          <div class="anim-header">
+            <span class="anim-name">${animName}</span>
+            <span class="anim-info">${state.anims[animName].frames.filter(f => f && f.img).length} frames</span>
+          </div>
+          <div class="row" style="margin:0;">
+            <label>Fila:</label>
+            <input type="number" min="0" max="${state.rows - 1}" value="${state.anims[animName].row}"
+                   data-anim="${animName}" class="rowInput" style="width:60px;">
+            <button class="secondary" data-del="${animName}" style="padding:4px 8px; font-size:10px;">Eliminar anim</button>
+          </div>
+          <div class="frames-strip" data-strip="${animName}"></div>
+        `;
+        cont.appendChild(block);
+      }
+
+      // Inputs de fila
+      cont.querySelectorAll('.rowInput').forEach(inp => {
+        inp.addEventListener('change', (e) => {
+          const name = e.target.dataset.anim;
+          let v = parseInt(e.target.value, 10) || 0;
+          v = Math.max(0, Math.min(state.rows - 1, v));
+          e.target.value = v;
+          state.anims[name].row = v;
+          drawPreview();
+          generateConfig();
+        });
+      });
+
+      // Botones eliminar
+      cont.querySelectorAll('[data-del]').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+          const name = e.target.dataset.del;
+          delete state.anims[name];
+          if (state.currentAnim === name) state.currentAnim = Object.keys(state.anims)[0] || '';
+          refreshAll();
+        });
+      });
+
+      // Tiras de frames
+      cont.querySelectorAll('[data-strip]').forEach(strip => {
+        const name = strip.dataset.strip;
+        state.anims[name].frames.forEach((frame, i) => {
+          const slot = document.createElement('div');
+          slot.className = 'frame-slot' + (frame && frame.img ? ' filled' : '');
+          slot.innerHTML = `<span class="idx">${i}</span>`;
+          if (frame && frame.img) {
+            const im = document.createElement('img');
+            im.src = frame.img.src;
+            slot.appendChild(im);
+          }
+          slot.addEventListener('click', (e) => {
+            state.currentAnim = name;
+            $('targetAnim').value = name;
+          });
+          // Click derecho borra el frame
+          slot.addEventListener('contextmenu', (e) => {
+            e.preventDefault();
+            state.anims[name].frames.splice(i, 1);
+            refreshAll();
+          });
+          strip.appendChild(slot);
+        });
+      });
+    }
+
+    function buildAnimSelect() {
+      const sel = $('targetAnim');
+      sel.innerHTML = '';
+      for (const name of Object.keys(state.anims)) {
+        const opt = document.createElement('option');
+        opt.value = name; opt.textContent = name;
+        if (name === state.currentAnim) opt.selected = true;
+        sel.appendChild(opt);
+      }
+      sel.onchange = () => { state.currentAnim = sel.value; };
+    }
+
+    // ============================================================
+    //  CARGA DE FRAMES
+    // ============================================================
+    async function addFiles(files) {
+      const animName = state.currentAnim;
+      if (!animName || !state.anims[animName]) return;
+      // Ordenar por nombre para preservar orden numérico (walk_01, walk_02...)
+      const sorted = Array.from(files).sort((a, b) => a.name.localeCompare(b.name, undefined, { numeric: true }));
+      for (const file of sorted) {
+        const img = await loadImageFile(file);
+        if (!img) continue;
+        state.anims[animName].frames.push({ img, offX: 0, offY: 0 });
+      }
+      refreshAll();
+    }
+
+    // ============================================================
+    //  EXPORTAR PNG
+    // ============================================================
+    function exportPNG() {
+      const out = document.createElement('canvas');
+      out.width = state.cols * state.frameW;
+      out.height = state.rows * state.frameH;
+      const octx = out.getContext('2d');
+
+      for (const animName of Object.keys(state.anims)) {
+        const anim = state.anims[animName];
+        anim.frames.forEach((frame, col) => {
+          if (!frame || !frame.img || col >= state.cols || anim.row >= state.rows) return;
+          const dx = col * state.frameW;
+          const dy = anim.row * state.frameH;
+          const scale = Math.min(state.frameW / frame.img.width, state.frameH / frame.img.height);
+          const dw = frame.img.width * scale;
+          const dh = frame.img.height * scale;
+          const x = dx + (state.frameW - dw) / 2 + (frame.offX || 0);
+          const y = dy + (state.frameH - dh) / 2 + (frame.offY || 0);
+          octx.drawImage(frame.img, x, y, dw, dh);
+        });
+      }
+
+      const name = ($('exportName').value || 'sheet.png').replace(/\.png$/i, '') + '.png';
       const a = document.createElement('a');
-      a.download = nombre;
-      a.href = cv.toDataURL('image/png');
+      a.download = name;
+      a.href = out.toDataURL('image/png');
       a.click();
     }
 
-    function procesarPiernas() {
-      if (!rawImg.src) return alert('Primero sube la imagen.');
-      cv.width = 384;
-      cv.height = 256;
-      ctx.clearRect(0, 0, cv.width, cv.height);
-
-      // La sección de piernas ocupa los primeros 6/9 de ancho y 4/5 de alto
-      const srcW = rawImg.width * (6 / 9);
-      const srcH = rawImg.height * (4 / 5);
-
-      ctx.drawImage(rawImg, 0, 0, srcW, srcH, 0, 0, 384, 256);
-      quitarFalsoAjedrez(ctx, 384, 256);
-      descargar('player_legs.png');
+    // ============================================================
+    //  GENERAR config.js
+    // ============================================================
+    function generateConfig() {
+      const key = ($('exportName').value || 'sheet').replace(/\.png$/i, '');
+      let animLines = '';
+      for (const [name, anim] of Object.entries(state.anims)) {
+        const n = anim.frames.filter(f => f && f.img).length;
+        if (n === 0) continue;
+        animLines += `          ${name}: { row: ${anim.row}, frames: ${n}, speed: 0.12 },\n`;
+      }
+      const cfg =
+`${key}: {
+  src: './assets/.../${key}.png',
+  frameW: ${state.frameW},
+  frameH: ${state.frameH},
+  animations: {
+${animLines}  }
+}`;
+      $('configOut').value = cfg;
     }
 
-    function procesarTorso() {
-      if (!rawImg.src) return alert('Primero sube la imagen.');
-      cv.width = 64;
-      cv.height = 64;
-      ctx.clearRect(0, 0, 64, 64);
-
-      // El torso con rifle a 0° está en la esquina superior derecha
-      const cellW = rawImg.width / 9;
-      const cellH = rawImg.height / 5;
-      const srcX = rawImg.width - cellW;
-      const srcY = 0;
-
-      ctx.drawImage(rawImg, srcX, srcY, cellW, cellH, 0, 0, 64, 64);
-      quitarFalsoAjedrez(ctx, 64, 64);
-      descargar('player_torso.png');
+    // ============================================================
+    //  REFRESH GENERAL
+    // ============================================================
+    function refreshAll() {
+      buildAnimSelect();
+      buildRowMap();
+      drawPreview();
+      generateConfig();
     }
 
-    function procesarClasico() {
-      if (!rawImg.src) return alert('Primero sube la imagen.');
-      cv.width = 384;
-      cv.height = 320;
-      ctx.clearRect(0, 0, 384, 320);
+    // ============================================================
+    //  EVENTOS DE UI
+    // ============================================================
+    $('btnApplyGrid').addEventListener('click', () => {
+      state.frameW = Math.max(1, parseInt($('cfgFrameW').value, 10) || 64);
+      state.frameH = Math.max(1, parseInt($('cfgFrameH').value, 10) || 64);
+      state.cols = Math.max(1, parseInt($('cfgCols').value, 10) || 6);
+      state.rows = Math.max(1, parseInt($('cfgRows').value, 10) || 5);
+      drawPreview();
+      buildRowMap();
+      generateConfig();
+      $('gridStatus').innerHTML = '<span class="badge ok">Grilla aplicada</span>';
+    });
 
-      // Ajuste al tamaño estándar 384x320
-      ctx.drawImage(rawImg, 0, 0, rawImg.width, rawImg.height, 0, 0, 384, 320);
-      quitarFalsoAjedrez(ctx, 384, 320);
-      descargar('player_sheet.png');
-    }
+    // Drop zone
+    const dz = $('dropZone');
+    const fi = $('fileInput');
+    dz.addEventListener('click', () => fi.click());
+    fi.addEventListener('change', (e) => addFiles(e.target.files));
+    ['dragenter', 'dragover'].forEach(ev =>
+      dz.addEventListener(ev, (e) => { e.preventDefault(); dz.classList.add('drag-over'); }));
+    ['dragleave', 'drop'].forEach(ev =>
+      dz.addEventListener(ev, (e) => { e.preventDefault(); dz.classList.remove('drag-over'); }));
+    dz.addEventListener('drop', (e) => {
+      if (e.dataTransfer.files.length) addFiles(e.dataTransfer.files);
+    });
+
+    $('btnClearAnim').addEventListener('click', () => {
+      if (state.anims[state.currentAnim]) state.anims[state.currentAnim].frames = [];
+      refreshAll();
+    });
+
+    $('btnClearAll').addEventListener('click', () => {
+      for (const a of Object.values(state.anims)) a.frames = [];
+      refreshAll();
+    });
+
+    $('btnExport').addEventListener('click', exportPNG);
+    $('btnGenConfig').addEventListener('click', generateConfig);
+    $('exportName').addEventListener('input', generateConfig);
+
+    $('btnAddAnim').addEventListener('click', () => {
+      const name = $('newAnimName').value.trim();
+      if (!name || state.anims[name]) return;
+      state.anims[name] = { row: 0, frames: [] };
+      $('newAnimName').value = '';
+      refreshAll();
+    });
+
+    // ============================================================
+    //  INICIALIZACIÓN
+    // ============================================================
+    refreshAll();
   </script>
 </body>
 </html>

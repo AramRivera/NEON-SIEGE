@@ -300,7 +300,7 @@ export const CONFIG = {
     },
          AUDIO: {
       // --- Música ---
-      bgm_arena:          './assets/audio/bgm/arena_theme.mp3',
+      bgm_arena:          './ASSETS/AUDIO/BGM/arena_theme.mp3',
 
       // --- Jugador ---
       sfx_shoot:          './ASSETS/AUDIO/SFX/shoot.wav',

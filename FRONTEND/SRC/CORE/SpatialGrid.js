@@ -14,10 +14,12 @@ export class SpatialGrid {
   }
 
   _getIndices(entity) {
-    const minX = Math.max(0, Math.floor((entity.x - entity.radius) / this.cellSize));
-    const maxX = Math.min(this.cols - 1, Math.floor((entity.x + entity.radius) / this.cellSize));
-    const minY = Math.max(0, Math.floor((entity.y - entity.radius) / this.cellSize));
-    const maxY = Math.min(this.rows - 1, Math.floor((entity.y + entity.radius) / this.cellSize));
+    const r = typeof entity.getHitRadius === 'function' ? entity.getHitRadius() : entity.radius;
+    const hitY = typeof entity.getHitY === 'function' ? entity.getHitY() : entity.y;
+    const minX = Math.max(0, Math.floor((entity.x - r) / this.cellSize));
+    const maxX = Math.min(this.cols - 1, Math.floor((entity.x + r) / this.cellSize));
+    const minY = Math.max(0, Math.floor((Math.min(entity.y, hitY) - r) / this.cellSize));
+    const maxY = Math.min(this.rows - 1, Math.floor((Math.max(entity.y, hitY) + r) / this.cellSize));
     return { minX, maxX, minY, maxY };
   }
 

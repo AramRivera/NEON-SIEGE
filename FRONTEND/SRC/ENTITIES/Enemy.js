@@ -51,6 +51,10 @@ export class Enemy extends Entity {
     this.chargeDir = { x: 0, y: 0 };
     this.primeTimer = 0;
     this.primeBeepTimer = 0; // Pitidos durante la cuenta atrás del kamikaze
+
+    const spriteSize = this.type === 'TANK' ? 72 : (this.type === 'SWARM' ? 28 : 46);
+    this.hitboxOffsetY = SpriteRenderer.visualHitOffsetY(spriteSize, -2);
+    this.hitboxRadius = Math.max(this.radius, spriteSize * 0.38);
   }
 
   takeDamage(amount, engine) {
@@ -58,7 +62,7 @@ export class Enemy extends Entity {
 
     this.hp -= amount;
     this.hitTimer = 0.08; // Flash visual de impacto
-    engine.particleSystem.emitSparks(this.x, this.y, this.color, 4);
+    engine.particleSystem.emitSparks(this.getHitX(), this.getHitY(), this.color, 4);
 
     // ---- AUDIO: impacto en enemigo (throttled para no saturar) ----
     sfxThrottled('sfx_enemy_hit', 0.18, 90);
@@ -220,7 +224,7 @@ export class Enemy extends Entity {
         this.x += (dirX + sepX * 0.75) * this.speed * dt;
         this.y += (dirY + sepY * 0.75) * this.speed * dt;
 
-        if (dist <= this.radius + player.radius) {
+        if (Math.hypot(player.x - this.getHitX(), player.y - this.getHitY()) <= this.getHitRadius() + player.radius) {
           player.takeDamage(this.damage, engine.particleSystem);
           // ---- AUDIO: mordisco de swarm (muy throttled, hay muchos) ----
           sfxThrottled('sfx_enemy_attack', 0.12, 250);
@@ -296,7 +300,7 @@ export class Enemy extends Entity {
         this.y += this.chargeDir.y * base.chargeSpeed * dt;
         this.stateTimer -= dt;
 
-        if (dist <= this.radius + player.radius) {
+        if (Math.hypot(player.x - this.getHitX(), player.y - this.getHitY()) <= this.getHitRadius() + player.radius) {
           player.takeDamage(this.damage, engine.particleSystem);
           this.stateTimer = 0;
         }

@@ -30,13 +30,17 @@ export class Boss extends Entity {
 
     // ---- AUDIO: control de golpes (throttle) ----
     this._lastHitSfx = 0;
+
+    const bossSize = this.radius * 2.8;
+    this.hitboxOffsetY = SpriteRenderer.visualHitOffsetY(bossSize, 0);
+    this.hitboxRadius = Math.max(this.radius, bossSize * 0.42);
   }
 
   takeDamage(amount, engine) {
     if (!this.active || this.state === 'die') return;
     this.hp -= amount;
     this.hitTimer = 0.08;
-    engine.particleSystem.emitSparks(this.x, this.y, '#ff0077', 8);
+    engine.particleSystem.emitSparks(this.getHitX(), this.getHitY(), '#ff0077', 8);
 
     // ---- AUDIO: impacto en el jefe (throttled, no saturar) ----
     const now = performance.now();
@@ -126,7 +130,7 @@ export class Boss extends Entity {
       this._updateTempest(dt, player, dist, dx, dy, angle, engine);
     }
 
-    if (dist <= this.radius + player.radius) {
+    if (Math.hypot(player.x - this.getHitX(), player.y - this.getHitY()) <= this.getHitRadius() + player.radius) {
       player.takeDamage(25, engine.particleSystem);
     }
 

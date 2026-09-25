@@ -29,6 +29,13 @@ export class SpriteRenderer {
     ctx.restore();
   }
 
+  // Ancla por defecto de los sheets (pies). El hitbox debe ir al centro visual, no a los pies.
+  static DEFAULT_ANCHOR_Y = 0.85;
+
+  static visualHitOffsetY(height, yOffset = 0, anchorY = SpriteRenderer.DEFAULT_ANCHOR_Y) {
+    return yOffset - height * (anchorY - 0.5);
+  }
+
   // ------------------------------------------------------------
   //  SPRITE ESTÁTICO (imagen única, sin animación)
   // ------------------------------------------------------------

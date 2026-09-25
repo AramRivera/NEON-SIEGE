@@ -6,7 +6,22 @@ export class Entity {
     this.x = x;
     this.y = y;
     this.radius = radius;
+    // Negativo = más arriba. El pivote (x,y) se queda en los pies para movimiento/sombra.
+    this.hitboxOffsetY = 0;
+    this.hitboxRadius = radius;
     this.active = true;
+  }
+
+  getHitX() {
+    return this.x;
+  }
+
+  getHitY() {
+    return this.y + this.hitboxOffsetY;
+  }
+
+  getHitRadius() {
+    return this.hitboxRadius;
   }
 
   // Restringe a la entidad dentro de los límites de la arena

@@ -296,7 +296,7 @@ export class DebugOverlay {
     ctx.strokeStyle = '#ff3333';
     for (let i = 0; i < engine.enemies.length; i++) {
       const e = engine.enemies[i];
-      this._drawHitCircle(ctx, e.x, e.y, e.radius, '#ff3333');
+      this._drawHitCircle(ctx, e.getHitX(), e.getHitY(), e.getHitRadius(), '#ff3333');
     }
 
     // --- Jefe (rosa) ---
@@ -304,7 +304,7 @@ export class DebugOverlay {
       const b = engine.currentBoss;
       ctx.strokeStyle = '#ff0077';
       ctx.lineWidth = 2.5;
-      this._drawHitCircle(ctx, b.x, b.y, b.radius, '#ff0077');
+      this._drawHitCircle(ctx, b.getHitX(), b.getHitY(), b.getHitRadius(), '#ff0077');
       ctx.lineWidth = 1.5;
     }
 

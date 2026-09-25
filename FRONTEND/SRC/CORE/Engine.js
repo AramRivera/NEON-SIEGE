@@ -427,16 +427,16 @@ export class Engine {
       b.update(dt, CONFIG.ARENA.OBSTACLES);
       if (!b.active) continue;
 
-      if (this.currentBoss && Math.hypot(b.x - this.currentBoss.x, b.y - this.currentBoss.y) < b.radius + this.currentBoss.radius) {
+      if (this.currentBoss && Math.hypot(b.x - this.currentBoss.getHitX(), b.y - this.currentBoss.getHitY()) < b.radius + this.currentBoss.getHitRadius()) {
         this.currentBoss.takeDamage(b.damage, this);
         b.hitsLeft--;
         if (b.hitsLeft <= 0) b.active = false;
       }
 
-      const nearby = this.spatialGrid.query(b.x, b.y, b.radius + 30);
+      const nearby = this.spatialGrid.query(b.x, b.y, b.radius + 90);
       for (const enemy of nearby) {
         if (!b.active) break;
-        if (enemy.active && Math.hypot(b.x - enemy.x, b.y - enemy.y) < b.radius + enemy.radius) {
+        if (enemy.active && Math.hypot(b.x - enemy.getHitX(), b.y - enemy.getHitY()) < b.radius + enemy.getHitRadius()) {
           enemy.takeDamage(b.damage, this);
           b.hitsLeft--;
           if (b.hitsLeft <= 0) { b.active = false; }

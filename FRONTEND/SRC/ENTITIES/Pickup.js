@@ -1,3 +1,4 @@
+import { assetManager } from '../SYSTEMS/AssetManager.js';
 // frontend/src/entities/Pickup.js
 export class Pickup {
   constructor(x, y, type = 'exp', value = 10, targetWeapon = null) {
@@ -31,21 +32,40 @@ export class Pickup {
     }
   }
 
-  draw(ctx) {
+    draw(ctx) {
     if (!this.active) return;
+
+    // Mapear tipo de pickup -> clave de sprite
+    let spriteKey = null;
+    if (this.type === 'heal') spriteKey = 'pickup_heal';
+    else if (this.type === 'ammo_shotgun') spriteKey = 'pickup_ammo_shotgun';
+    else if (this.type === 'ammo_plasma') spriteKey = 'pickup_ammo_plasma';
+    else if (this.type === 'exp') spriteKey = 'pickup_exp';
+
+    const img = spriteKey ? assetManager.getImage(spriteKey) : null;
+
+    // --- Sprite (con leve pulso flotante) ---
+    if (img) {
+      const bob = Math.sin(Date.now() / 300 + this.x * 0.05) * 2; // flotar suave
+      ctx.save();
+      const size = 32;
+      ctx.drawImage(img, this.x - size / 2, this.y - size / 2 + bob, size, size);
+      ctx.restore();
+      return;
+    }
+
+    // --- Fallback: forma geométrica anterior ---
     ctx.save();
     ctx.fillStyle = this.color;
     ctx.shadowBlur = 10;
     ctx.shadowColor = this.color;
 
     if (this.type.startsWith('ammo_')) {
-      // Cartucho/Célula rectangular
       ctx.fillRect(this.x - 7, this.y - 5, 14, 10);
       ctx.strokeStyle = '#ffffff';
       ctx.lineWidth = 1;
       ctx.strokeRect(this.x - 7, this.y - 5, 14, 10);
 
-      // Letra distintiva en el centro
       ctx.fillStyle = '#000';
       ctx.font = 'bold 8px monospace';
       ctx.textAlign = 'center';
@@ -53,7 +73,6 @@ export class Pickup {
       const label = this.type === 'ammo_shotgun' ? 'SG' : 'PL';
       ctx.fillText(label, this.x, this.y);
     } else {
-      // Círculo para EXP y Botiquines
       ctx.beginPath();
       ctx.arc(this.x, this.y, this.radius, 0, Math.PI * 2);
       ctx.fill();

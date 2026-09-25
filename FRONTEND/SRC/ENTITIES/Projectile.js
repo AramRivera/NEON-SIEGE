@@ -1,4 +1,6 @@
-// frontend/src/entities/Projectile.js
+import { Entity } from './Entity.js';
+import { assetManager } from '../SYSTEMS/AssetManager.js';
+
 export class Projectile {
   constructor() {
     this.active = false;
@@ -61,8 +63,42 @@ export class Projectile {
     }
   }
 
-  draw(ctx) {
+  spawn(x, y, angle, speed, damage, range, color, penetration = 1, isEnemy = false, spriteKey = null) {
+    this.x = x;
+    this.y = y;
+    this.vx = Math.cos(angle) * speed;
+    this.vy = Math.sin(angle) * speed;
+    this.angle = angle;                    // <-- para rotar el sprite
+    this.damage = damage;
+    this.distanceLeft = range;
+    this.color = color;
+    this.penetration = penetration;
+    this.hitsLeft = penetration;
+    this.radius = isEnemy ? 6 : 4;
+    this.isEnemy = isEnemy;
+    this.spriteKey = spriteKey;            // <-- clave del sprite (o null)
+    this.active = true;
+  }
+
+    draw(ctx) {
     if (!this.active) return;
+
+    // --- Sprite rotado (si está definido y cargado) ---
+    const img = this.spriteKey ? assetManager.getImage(this.spriteKey) : null;
+
+    if (img) {
+      ctx.save();
+      ctx.translate(this.x, this.y);
+      ctx.rotate(this.angle);              // rota según dirección de vuelo
+      const scale = this.isEnemy ? 1.2 : 1.0;
+      const w = img.width * scale;
+      const h = img.height * scale;
+      ctx.drawImage(img, -w / 2, -h / 2, w, h);
+      ctx.restore();
+      return;
+    }
+
+    // --- Fallback: círculo con glow (comportamiento anterior) ---
     ctx.save();
     ctx.fillStyle = this.color;
     ctx.shadowBlur = 10;

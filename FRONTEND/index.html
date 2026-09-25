@@ -19,7 +19,9 @@
         <!-- Vista 1: Navegación Principal -->
         <div id="menu-main-view" class="menu-view active">
           <button id="btn-play" class="neon-btn primary">JUGAR</button>
+          <button id="btn-instructions" class="neon-btn">INSTRUCCIONES</button>
           <button id="btn-leaderboard" class="neon-btn">RANKING</button>
+          <button id="btn-credits" class="neon-btn">CRÉDITOS</button>
           <button id="btn-settings" class="neon-btn">CONFIGURACIÓN</button>
         </div>
 
@@ -43,8 +45,8 @@
           </div>
           <button id="btn-back-lb" class="btn-action btn-back">VOLVER</button>
         </div>
-
-        <!-- Vista 3: Ajustes -->
+>
+                <!-- Vista 3: Ajustes -->
         <div id="menu-settings-view" class="menu-view">
           <h3 class="title-cyan">SISTEMA & PREFERENCIAS</h3>
           <div class="setting-item">
@@ -61,6 +63,56 @@
           </div>
           <button id="btn-back-settings" class="btn-action btn-back">VOLVER</button>
         </div>
+
+        <!-- Vista 4: Instrucciones (imagen completa) -->
+        <div id="menu-instructions-view" class="menu-view">
+          <h3 class="title-cyan">INSTRUCCIONES</h3>
+
+          <div class="instructions-image-wrapper">
+            <img
+              id="instructions-image"
+              src="./ASSETS/UI/instr.png"
+              alt="Instrucciones de juego"
+              class="instructions-image"
+            >
+          </div>
+
+          <button id="btn-back-instructions" class="btn-action btn-back">VOLVER</button>
+        </div>
+
+        <!-- Vista 5: Créditos -->
+        <div id="menu-credits-view" class="menu-view">
+          <h3 class="title-cyan">CRÉDITOS</h3>
+
+          <div class="credits-block">
+            <div class="credit-item">
+              <span class="credit-role">Materia</span>
+              <span class="credit-value">[NOMBRE DE LA MATERIA]</span>
+            </div>
+            <div class="credit-item">
+              <span class="credit-role">Profesor</span>
+              <span class="credit-value">[NOMBRE DEL PROFESOR]</span>
+            </div>
+            <div class="credit-item">
+              <span class="credit-role">Alumno 1</span>
+              <span class="credit-value">John Doe</span>
+            </div>
+            <div class="credit-item">
+              <span class="credit-role">Alumno 2</span>
+              <span class="credit-value">Jane Smith</span>
+            </div>
+            <div class="credit-item">
+              <span class="credit-role">Grupo</span>
+              <span class="credit-value">[GRUPO]</span>
+            </div>
+          </div>
+
+          <p class="credits-footer">NEON SIEGE — Arena Survival</p>
+
+          <button id="btn-back-credits" class="btn-action btn-back">VOLVER</button>
+        </div>
+      </div>
+    </div>
       </div>
     </div>
 
@@ -122,6 +174,7 @@
 
         <div id="pause-view" class="menu-view active">
           <button id="btn-resume" class="neon-btn primary">REANUDAR</button>
+          <button id="btn-pause-restart" class="neon-btn">REINICIAR</button>
           <button id="btn-pause-settings" class="neon-btn">CONFIGURACIÓN</button>
           <button id="btn-pause-quit" class="neon-btn" style="border-color:#ff0077;color:#ff0077;">SALIR AL MENÚ</button>
 

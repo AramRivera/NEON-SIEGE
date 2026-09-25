@@ -122,6 +122,10 @@ export class Player extends Entity {
 
       const bullet = bulletsPool.get();
       if (bullet) {
+        let spriteKey = 'bullet_pistol';
+        if (this.currentWeaponKey === 'SHOTGUN') spriteKey = 'bullet_shotgun';
+        else if (this.currentWeaponKey === 'ENERGY_BEAM') spriteKey = 'bullet_plasma';
+
         bullet.spawn(
           this.x,
           this.y,
@@ -131,7 +135,8 @@ export class Player extends Entity {
           weapon.range,
           weapon.color,
           weapon.penetration,
-          false
+          false,
+          spriteKey
         );
       }
     }

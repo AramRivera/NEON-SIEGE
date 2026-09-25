@@ -156,7 +156,7 @@ export class Boss extends Entity {
         const a = (Math.PI * 2 / count) * i;
         const b = engine.enemyBulletsPool.get();
         if (b) {
-          b.spawn(this.x, this.y, a, 320, 16, 850, '#ff0055', 1, true);
+          b.spawn(this.x, this.y, a, 320, 16, 850, '#ff0055', 1, true, 'boss_projectile');
         }
       }
     }
@@ -214,7 +214,7 @@ export class Boss extends Entity {
         const offset = (k - 2) * 0.18;
         const b = engine.enemyBulletsPool.get();
         if (b) {
-          b.spawn(this.x, this.y, angle + offset, 440, 14, 900, '#9400d3', 1, true);
+          b.spawn(this.x, this.y, angle + offset, 440, 14, 900, '#9400d3', 1, true, 'boss_projectile');
         }
       }
     }

@@ -93,84 +93,118 @@ export class DebugOverlay {
     if (!CONFIG.DEBUG.SHOW_HUD) return;
 
     const p = engine.player;
-    const lines = [];
-
-    // --- Rendimiento ---
-    lines.push(`=== RENDIMIENTO ===`);
-    lines.push(`FPS: ${this.fps.toFixed(0)}  (min: ${this.minFps === Infinity ? '--' : this.minFps.toFixed(0)})`);
-    lines.push(`Frame: ${this.frameTimeMs.toFixed(1)} ms  (max: ${this.maxFrameMs.toFixed(1)})`);
-    lines.push(`Spikes: ${this.spikes}`);
-    lines.push('');
-
-    // --- Entidades ---
     const playerBullets = engine.playerBulletsPool ? engine.playerBulletsPool.getActive().length : 0;
     const enemyBullets = engine.enemyBulletsPool ? engine.enemyBulletsPool.getActive().length : 0;
-    lines.push(`=== ENTIDADES ===`);
-    lines.push(`Enemigos: ${engine.enemies.length}`);
-    lines.push(`Balas jugador: ${playerBullets} / ${CONFIG.POOLS.PLAYER_BULLETS}`);
-    lines.push(`Balas enemigo: ${enemyBullets} / ${CONFIG.POOLS.ENEMY_BULLETS}`);
-    lines.push(`Pickups: ${engine.pickups.length}`);
+    const totalProjectiles = playerBullets + enemyBullets;
+
+    // --- Conteo total de entidades activas ---
+    const totalEnemies = engine.enemies.length + (engine.currentBoss ? 1 : 0);
+    const totalEntities = totalEnemies + totalProjectiles + engine.pickups.length + 1; // +1 = jugador
+
+    // --- Estado del juego ---
+    let estado = 'PLAYING';
+    if (engine.isGameOver) estado = 'GAMEOVER';
+    else if (engine.isPaused) estado = 'PAUSED';
+
     const particles = engine.particleSystem ? engine.particleSystem.pool.getActive().length : 0;
-    lines.push(`Particulas: ${particles} / ${CONFIG.POOLS.PARTICLES}`);
-    lines.push(`Jefe activo: ${engine.currentBoss ? 'SI' : 'NO'}`);
-    lines.push('');
-
-    // --- Oleada ---
     const wm = engine.waveManager;
-    lines.push(`=== OLEADA ===`);
-    lines.push(`Oleada actual: ${wm.currentWave}`);
-    lines.push(`Por spawnear: ${wm.enemiesToSpawn}`);
-    lines.push(`Intervalo: ${wm.spawnInterval.toFixed(2)} s`);
-    lines.push(`Combo: x${engine.comboMult.toFixed(2)} (${engine.comboCount})`);
-    lines.push('');
 
-    // --- Jugador ---
-    lines.push(`=== JUGADOR ===`);
-    lines.push(`HP: ${p.hp.toFixed(0)} / ${p.maxHp}`);
-    lines.push(`Energia: ${p.energy.toFixed(0)} / ${p.maxEnergy}`);
-    lines.push(`Nivel: ${p.level}  EXP: ${p.exp}/${p.expNext}`);
-    lines.push(`Arma: ${p.currentWeaponKey}`);
-    lines.push(`Municion: ${p.ammo[p.currentWeaponKey] === Infinity ? 'INF' : p.ammo[p.currentWeaponKey]}`);
-    lines.push(`Pos: (${p.x.toFixed(0)}, ${p.y.toFixed(0)})`);
-    lines.push(`Camara: (${engine.camera.x.toFixed(0)}, ${engine.camera.y.toFixed(0)})`);
-    lines.push('');
+    // --- Construir líneas (formato enunciado + detalle extendido) ---
+    const lines = [];
+    const divider = (txt) => lines.push(`==${txt}==`);
+    const kv = (k, v) => lines.push(`${k}: ${v}`);
 
-    // --- Estado ---
-    lines.push(`=== ESTADO ===`);
-    lines.push(`Pausa: ${engine.isPaused ? 'SI' : 'NO'}  GameOver: ${engine.isGameOver ? 'SI' : 'NO'}`);
-    lines.push(`Audio: ${CONFIG.ASSETS.USE_AUDIO ? 'ON' : 'OFF'}`);
-    lines.push(`Tiempo: ${engine.gameTime.toFixed(1)} s`);
-    lines.push(`Kills: ${engine.kills}  Bosses: ${engine.bossesDefeated}`);
+    // ===== BLOQUE OBLIGATORIO (enunciado) =====
+    kv('FPS', this.fps.toFixed(0));
+    kv('ENTIDADES', totalEntities);
+    kv('ENEMIGOS', totalEnemies);
+    kv('PROYECTILES', totalProjectiles);
+    kv('PLAYER X', p.x.toFixed(0));
+    kv('PLAYER Y', p.y.toFixed(0));
+    kv('ESTADO', estado);
+
+    // ===== DETALLE EXTENDIDO =====
+    divider('RENDIMIENTO');
+    kv('Frame', `${this.frameTimeMs.toFixed(1)} ms (max ${this.maxFrameMs.toFixed(1)})`);
+    kv('FPS min', this.minFps === Infinity ? '--' : this.minFps.toFixed(0));
+    kv('Spikes', this.spikes);
+
+    divider('ENTIDADES');
+    kv('Jugador', 1);
+    kv('Balas jugador', `${playerBullets} / ${CONFIG.POOLS.PLAYER_BULLETS}`);
+    kv('Balas enemigo', `${enemyBullets} / ${CONFIG.POOLS.ENEMY_BULLETS}`);
+    kv('Pickups', engine.pickups.length);
+    kv('Particulas', `${particles} / ${CONFIG.POOLS.PARTICLES}`);
+    kv('Jefe', engine.currentBoss ? 'SI' : 'NO');
+
+    divider('OLEADA');
+    kv('Oleada', wm.currentWave);
+    kv('Por spawnear', wm.enemiesToSpawn);
+    kv('Intervalo', `${wm.spawnInterval.toFixed(2)} s`);
+    kv('Combo', `x${engine.comboMult.toFixed(2)} (${engine.comboCount})`);
+
+        divider('JUGADOR');
+    kv('HP', `${p.hp.toFixed(0)} / ${p.maxHp}`);
+    kv('Energia', `${p.energy.toFixed(0)} / ${p.maxEnergy}`);
+    kv('Nivel', `${p.level}  EXP: ${p.exp}/${p.expNext}`);
+    kv('Arma', p.currentWeaponKey);
+    kv('Municion', p.ammo[p.currentWeaponKey] === Infinity ? 'INF' : p.ammo[p.currentWeaponKey]);
+    kv('Camara', `(${engine.camera.x.toFixed(0)}, ${engine.camera.y.toFixed(0)})`);
+    kv('Tiempo', `${engine.gameTime.toFixed(1)} s`);
+    kv('Kills', engine.kills);
+
+    // ===== MOVIMIENTO (velocidad y dash) =====
+    const speedBase = p.speed;
+    const dashMult = CONFIG.PLAYER.DASH_SPEED_MULT;
+    const speedActual = p.isDashing ? speedBase * dashMult : speedBase;
+    const pctVsBase = ((speedBase / CONFIG.PLAYER.SPEED - 1) * 100);
+
+    divider('MOVIMIENTO');
+    kv('Vel. base', `${speedBase.toFixed(0)} px/s`);
+    kv('Vel. actual', `${speedActual.toFixed(0)} px/s`);
+    kv('Bonus mejoras', `${pctVsBase >= 0 ? '+' : ''}${pctVsBase.toFixed(0)}%`);
+    kv('Dash', p.isDashing ? `SI (x${dashMult})` : 'NO');
+    kv('Costo dash', `${CONFIG.PLAYER.DASH_COST} EN`);
+    kv('Regen energia', `${CONFIG.PLAYER.ENERGY_REGEN}/s`);
 
     // --- Dibujar el panel ---
     const padX = 12;
     const padY = 10;
     const fontSize = 12;
     const lineH = 15;
-    const panelW = 300;
+
+    // Ancho dinámico: se ajusta al texto más largo (con tope máximo)
+    let maxW = 0;
+    ctx.save();
+    ctx.font = `${fontSize}px Consolas, monospace`;
+    for (const line of lines) {
+      const w = ctx.measureText(line).width;
+      if (w > maxW) maxW = w;
+    }
+    ctx.restore();
+
+    const panelW = Math.min(420, Math.max(260, maxW + padX * 2));
     const panelH = lines.length * lineH + padY * 2;
 
     ctx.save();
 
-    // Fondo semitransparente
-    ctx.fillStyle = 'rgba(0, 10, 5, 0.78)';
+    ctx.fillStyle = 'rgba(0, 10, 5, 0.82)';
     ctx.fillRect(10, 10, panelW, panelH);
-    ctx.strokeStyle = '#39ff14'; // verde neón tipo consola
+    ctx.strokeStyle = '#39ff14';
     ctx.lineWidth = 1;
     ctx.strokeRect(10, 10, panelW, panelH);
 
-    // Texto
-    ctx.font = `${fontSize}px Consolas, monospace`;
     ctx.textAlign = 'left';
     ctx.textBaseline = 'top';
 
     let y = 10 + padY;
     for (const line of lines) {
-      if (line.startsWith('===')) {
-        ctx.fillStyle = '#39ff14'; // cabeceras verde
+      if (line.startsWith('==')) {
+        // Cabeceras de sección
+        ctx.fillStyle = '#39ff14';
         ctx.font = `bold ${fontSize}px Consolas, monospace`;
       } else {
-        ctx.fillStyle = '#c8facc'; // texto verde claro
+        ctx.fillStyle = '#c8facc';
         ctx.font = `${fontSize}px Consolas, monospace`;
       }
       ctx.fillText(line, 10 + padX, y);
@@ -183,12 +217,15 @@ export class DebugOverlay {
     // ============================================================
   //  CAPAS DE MUNDO (se dibujan dentro del translate de la cámara)
   // ============================================================
-  renderWorld(ctx, engine) {
+    renderWorld(ctx, engine) {
     if (!this.enabled) return;
 
     if (CONFIG.DEBUG.DRAW_ARENA_BOUNDS) this._drawArenaBounds(ctx);
+    if (CONFIG.DEBUG.DRAW_PATHS) this._drawAIPaths(ctx, engine);
     if (CONFIG.DEBUG.DRAW_HITBOXES) this._drawHitboxes(ctx, engine);
+    if (CONFIG.DEBUG.DRAW_VECTORS) this._drawVectors(ctx, engine);
     if (CONFIG.DEBUG.DRAW_OBSTACLES) this._drawObstacles(ctx);
+    if (CONFIG.DEBUG.SHOW_ENTITY_LABELS) this._drawEntityLabels(ctx, engine);
   }
 
   // ------------------------------------------------------------
@@ -296,6 +333,151 @@ export class DebugOverlay {
 
     ctx.restore();
   }
+
+    // ------------------------------------------------------------
+  //  Vectores de apuntado y movimiento
+  // ------------------------------------------------------------
+  _drawVectors(ctx, engine) {
+    ctx.save();
+    ctx.globalAlpha = 0.85;
+    ctx.lineWidth = 1.5;
+
+    // --- Jugador: flecha de apuntado (hacia el mouse) ---
+    const p = engine.player;
+    if (p) {
+      this._drawArrow(
+        ctx,
+        p.x, p.y,
+        p.x + Math.cos(p.aimAngle) * (p.radius + 34),
+        p.y + Math.sin(p.aimAngle) * (p.radius + 34),
+        '#00f0ff'
+      );
+    }
+
+    // --- Enemigos: flecha con su ángulo hacia el jugador ---
+    for (let i = 0; i < engine.enemies.length; i++) {
+      const e = engine.enemies[i];
+      this._drawArrow(
+        ctx,
+        e.x, e.y,
+        e.x + Math.cos(e.angle) * (e.radius + 22),
+        e.y + Math.sin(e.angle) * (e.radius + 22),
+        '#ff8800'
+      );
+    }
+
+    // --- Jefe ---
+    if (engine.currentBoss) {
+      const b = engine.currentBoss;
+      if (typeof b.angle === 'number') {
+        this._drawArrow(
+          ctx,
+          b.x, b.y,
+          b.x + Math.cos(b.angle) * (b.radius + 40),
+          b.y + Math.sin(b.angle) * (b.radius + 40),
+          '#ff0077'
+        );
+      }
+    }
+
+    ctx.restore();
+  }
+
+  // ------------------------------------------------------------
+  //  Rutas de IA: línea enemigo -> jugador
+  // ------------------------------------------------------------
+  _drawAIPaths(ctx, engine) {
+    const p = engine.player;
+    if (!p) return;
+
+    ctx.save();
+    ctx.globalAlpha = 0.25;
+    ctx.lineWidth = 1;
+    ctx.strokeStyle = '#ff3333';
+    ctx.setLineDash([3, 4]);
+    ctx.beginPath();
+    for (let i = 0; i < engine.enemies.length; i++) {
+      const e = engine.enemies[i];
+      ctx.moveTo(e.x, e.y);
+      ctx.lineTo(p.x, p.y);
+    }
+    if (engine.currentBoss) {
+      ctx.moveTo(engine.currentBoss.x, engine.currentBoss.y);
+      ctx.lineTo(p.x, p.y);
+    }
+    ctx.stroke();
+    ctx.setLineDash([]);
+    ctx.restore();
+  }
+
+  // ------------------------------------------------------------
+  //  Etiquetas FSM sobre cada enemigo
+  // ------------------------------------------------------------
+  _drawEntityLabels(ctx, engine) {
+    if (!CONFIG.DEBUG.SHOW_ENTITY_LABELS) return;
+
+    ctx.save();
+    ctx.font = 'bold 9px Consolas, monospace';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'bottom';
+
+    const labelColors = {
+      SPAWN: '#888888',
+      SEARCH: '#00f0ff',
+      CHASE: '#ffd700',
+      ATTACK: '#ff3333',
+      RETREAT: '#39ff14',
+      DEAD: '#555555'
+    };
+
+    for (let i = 0; i < engine.enemies.length; i++) {
+      const e = engine.enemies[i];
+      const txt = `${e.state}`;
+      const y = e.y - e.radius - 6;
+
+      // Sombra para legibilidad
+      ctx.fillStyle = 'rgba(0,0,0,0.7)';
+      ctx.fillText(txt, e.x + 1, y + 1);
+
+      // Texto del estado
+      ctx.fillStyle = labelColors[e.state] || '#ffffff';
+      ctx.fillText(txt, e.x, y);
+    }
+
+    ctx.restore();
+  }
+
+  // ------------------------------------------------------------
+  //  Utilidad: dibuja una flecha desde (x1,y1) a (x2,y2)
+  // ------------------------------------------------------------
+  _drawArrow(ctx, x1, y1, x2, y2, color) {
+    const angle = Math.atan2(y2 - y1, x2 - x1);
+    const headLen = 7;
+
+    ctx.strokeStyle = color;
+    ctx.fillStyle = color;
+
+    // Línea
+    ctx.beginPath();
+    ctx.moveTo(x1, y1);
+    ctx.lineTo(x2, y2);
+    ctx.stroke();
+
+    // Cabeza de flecha
+    ctx.beginPath();
+    ctx.moveTo(x2, y2);
+    ctx.lineTo(
+      x2 - headLen * Math.cos(angle - Math.PI / 6),
+      y2 - headLen * Math.sin(angle - Math.PI / 6)
+    );
+    ctx.lineTo(
+      x2 - headLen * Math.cos(angle + Math.PI / 6),
+      y2 - headLen * Math.sin(angle + Math.PI / 6)
+    );
+    ctx.closePath();
+    ctx.fill();
+  }
+
 
   // ------------------------------------------------------------
   //  Obstáculos como rectángulos AABB

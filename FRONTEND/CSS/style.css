@@ -326,3 +326,70 @@ th {
   color: #ff0077;
   text-shadow: 0 0 12px rgba(255, 0, 119, 0.6);
 }
+
+/* ============================================
+   INSTRUCCIONES (imagen completa)
+   ============================================ */
+.instructions-image-wrapper {
+  margin: 16px 0;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  border: 1px solid #1a273d;
+  border-radius: 6px;
+  background: #050811;
+  padding: 8px;
+  max-height: 60vh;
+  overflow: hidden;
+}
+
+.instructions-image {
+  width: 100%;
+  height: auto;
+  max-height: 58vh;
+  object-fit: contain;
+  border-radius: 4px;
+  display: block;
+}
+
+/* ============================================
+   CRÉDITOS
+   ============================================ */
+.credits-block {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin: 18px 0;
+  text-align: left;
+}
+
+.credit-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px 14px;
+  background: #0b1220;
+  border-left: 3px solid #00f0ff;
+  border-radius: 4px;
+}
+
+.credit-role {
+  font-size: 11px;
+  letter-spacing: 1px;
+  color: #8fa0b5;
+  text-transform: uppercase;
+}
+
+.credit-value {
+  font-size: 13px;
+  color: #00f0ff;
+  font-weight: bold;
+}
+
+.credits-footer {
+  margin: 16px 0 4px 0;
+  font-size: 12px;
+  letter-spacing: 2px;
+  color: #ff0077;
+  text-shadow: 0 0 10px rgba(255, 0, 119, 0.6);
+}

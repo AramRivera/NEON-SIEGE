@@ -280,7 +280,8 @@ export class Enemy extends Entity {
             650,
             base.color,
             1,
-            true
+            true,
+            'bullet_enemy'
           );
         }
         this.cooldownTimer = base.shootCooldown;

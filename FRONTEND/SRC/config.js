@@ -197,10 +197,24 @@ export const CONFIG = {
     USE_IMAGE_SPRITES: true,
     USE_AUDIO: true,
     SPRITES: {
-      // Suelo y entorno
+      // --- Suelo y entorno ---
       tile_floor: './assets/tiles/floor_metal.png',
       tile_wall: './assets/tiles/wall_tech.png',
       obstacle_box: './assets/tiles/obstacle_box.png',
+
+      // --- BALAS / PROYECTILES (estáticos, apuntan a la derecha) ---
+      bullet_pistol:      './ASSETS/SPRITES/bullet_pistol.png',
+      bullet_shotgun:     './assets/sprites/bullet_shotgun.png',
+      bullet_plasma:      './assets/sprites/bullet_plasma.png',
+      bullet_enemy:       './assets/sprites/bullet_enemy.png',
+      boss_projectile:    './assets/sprites/boss_projectile.png',
+
+      // --- PICKUPS ---
+      pickup_heal:         './assets/sprites/pickup_heal.png',
+      pickup_ammo_shotgun: './assets/sprites/pickup_ammo_shotgun.png',
+      pickup_ammo_plasma:  './assets/sprites/pickup_ammo_plasma.png',
+      pickup_exp:          './assets/sprites/pickup_exp.png',
+      hud_portrait: './assets/hud/hud_portrait.png',
 
       // Spritesheets por cada arma (1536x1024 px: 6 columnas x 5 filas)
       player_pistol: {

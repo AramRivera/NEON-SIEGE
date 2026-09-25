@@ -12,12 +12,20 @@ export class MainMenu {
     this.settingsView = document.getElementById('menu-settings-view');
     this.lbBody = document.getElementById('leaderboard-body');
 
+    this.instructionsView = document.getElementById('menu-instructions-view');
+    this.creditsView = document.getElementById('menu-credits-view');
+
     // Botones de acción
     this.btnPlay = document.getElementById('btn-play');
     this.btnLeaderboard = document.getElementById('btn-leaderboard');
     this.btnSettings = document.getElementById('btn-settings');
     this.btnBackLb = document.getElementById('btn-back-lb');
     this.btnBackSettings = document.getElementById('btn-back-settings');
+
+    this.btnInstructions = document.getElementById('btn-instructions');
+    this.btnCredits = document.getElementById('btn-credits');
+    this.btnBackInstructions = document.getElementById('btn-back-instructions');
+    this.btnBackCredits = document.getElementById('btn-back-credits');
 
     // Controles de configuración
     this.chkAudio = document.getElementById('setting-audio');
@@ -50,6 +58,14 @@ export class MainMenu {
     this.btnBackLb.addEventListener('click', () => this._switchView(this.mainView));
     this.btnBackSettings.addEventListener('click', () => this._switchView(this.mainView));
 
+    // Instrucciones y Créditos
+    this.btnInstructions.addEventListener('click', () => this._switchView(this.instructionsView));
+    this.btnCredits.addEventListener('click', () => this._switchView(this.creditsView));
+    this.btnBackInstructions.addEventListener('click', () => this._switchView(this.mainView));
+    this.btnBackCredits.addEventListener('click', () => this._switchView(this.mainView));
+
+    // Cambios de ajustes
+
     // Cambios de ajustes
     this.chkAudio.addEventListener('change', (e) => {
       CONFIG.ASSETS.USE_AUDIO = e.target.checked;
@@ -72,6 +88,8 @@ export class MainMenu {
     this.mainView.classList.remove('active');
     this.lbView.classList.remove('active');
     this.settingsView.classList.remove('active');
+    this.instructionsView.classList.remove('active');
+    this.creditsView.classList.remove('active');
     viewToShow.classList.add('active');
   }
 

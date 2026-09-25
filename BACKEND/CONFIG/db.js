@@ -1,27 +1,66 @@
 // backend/config/db.js
-const { Pool } = require('pg');
-require('dotenv').config();
+// Almacén de puntuaciones en JSON (sin base de datos).
+const fs = require('fs/promises');
+const path = require('path');
 
-const pool = new Pool({
-  host: process.env.DB_HOST || 'localhost',
-  port: parseInt(process.env.DB_PORT, 10) || 5433,
-  user: process.env.DB_USER || 'user1',
-  password: process.env.DB_PASSWORD || 'aramysaul',
-  database: process.env.DB_NAME || 'neon-siege',
-  max: 20, // Máximo de conexiones simultáneas en el pool
-  idleTimeoutMillis: 30000,
-  connectionTimeoutMillis: 2000
-});
+const DATA_FILE = path.join(__dirname, '..', 'scores.json');
 
-pool.on('connect', () => {
-  console.log('[PostgreSQL] Conectado exitosamente al pool.');
-});
+const emptyStore = () => ({ nextId: 1, scores: [] });
 
-pool.on('error', (err) => {
-  console.error('[PostgreSQL Error inesperado]:', err);
-});
+let writeQueue = Promise.resolve();
+
+async function readStore() {
+  try {
+    const raw = await fs.readFile(DATA_FILE, 'utf8');
+    const data = JSON.parse(raw);
+    if (!Array.isArray(data.scores)) data.scores = [];
+    if (typeof data.nextId !== 'number') data.nextId = 1;
+    return data;
+  } catch (err) {
+    if (err.code === 'ENOENT') {
+      const store = emptyStore();
+      await fs.writeFile(DATA_FILE, JSON.stringify(store, null, 2), 'utf8');
+      return store;
+    }
+    throw err;
+  }
+}
+
+async function writeStore(store) {
+  await fs.writeFile(DATA_FILE, JSON.stringify(store, null, 2), 'utf8');
+}
+
+function withLock(fn) {
+  const run = writeQueue.then(fn, fn);
+  writeQueue = run.then(() => undefined, () => undefined);
+  return run;
+}
+
+async function insertScore(entry) {
+  return withLock(async () => {
+    const store = await readStore();
+    const record = {
+      id: store.nextId++,
+      player_name: entry.player_name,
+      score: entry.score,
+      wave_reached: entry.wave_reached,
+      time_survived_seconds: entry.time_survived_seconds,
+      enemies_killed: entry.enemies_killed,
+      bosses_defeated: entry.bosses_defeated,
+      played_at: new Date().toISOString()
+    };
+    store.scores.push(record);
+    await writeStore(store);
+    return record;
+  });
+}
+
+async function getAllScores() {
+  const store = await readStore();
+  return store.scores;
+}
 
 module.exports = {
-  query: (text, params) => pool.query(text, params),
-  pool
+  insertScore,
+  getAllScores
 };

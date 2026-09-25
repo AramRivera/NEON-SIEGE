@@ -11,24 +11,25 @@ exports.saveScore = async (req, res) => {
     }
 
     const sanitizedPlayer = String(player).trim().substring(0, 30);
-    const query = `
-      INSERT INTO game_scores (player_name, score, wave_reached, time_survived_seconds, enemies_killed, bosses_defeated)
-      VALUES ($1, $2, $3, $4, $5, $6)
-      RETURNING id, player_name, score, wave_reached, time_survived_seconds, played_at;
-    `;
-    const values = [
-      sanitizedPlayer,
-      Math.floor(score),
-      Math.max(1, parseInt(wave, 10) || 1),
-      Math.max(0, parseInt(timeSurvived, 10) || 0),
-      Math.max(0, parseInt(kills, 10) || 0),
-      Math.max(0, parseInt(bossesDefeated, 10) || 0)
-    ];
+    const saved = await db.insertScore({
+      player_name: sanitizedPlayer,
+      score: Math.floor(score),
+      wave_reached: Math.max(1, parseInt(wave, 10) || 1),
+      time_survived_seconds: Math.max(0, parseInt(timeSurvived, 10) || 0),
+      enemies_killed: Math.max(0, parseInt(kills, 10) || 0),
+      bosses_defeated: Math.max(0, parseInt(bossesDefeated, 10) || 0)
+    });
 
-    const result = await db.query(query, values);
     return res.status(201).json({
       message: 'Partida guardada con éxito',
-      record: result.rows[0]
+      record: {
+        id: saved.id,
+        player_name: saved.player_name,
+        score: saved.score,
+        wave_reached: saved.wave_reached,
+        time_survived_seconds: saved.time_survived_seconds,
+        played_at: saved.played_at
+      }
     });
   } catch (error) {
     console.error('Error en saveScore:', error);
@@ -39,22 +40,26 @@ exports.saveScore = async (req, res) => {
 // GET /api/scores - Top 10 de jugadores
 exports.getTopScores = async (req, res) => {
   try {
-    const query = `
-      SELECT 
-        id,
-        player_name AS player,
-        score,
-        wave_reached AS wave,
-        time_survived_seconds AS "timeSurvived",
-        enemies_killed AS kills,
-        bosses_defeated AS "bossesDefeated",
-        played_at AS date
-      FROM game_scores
-      ORDER BY score DESC, time_survived_seconds DESC
-      LIMIT 10;
-    `;
-    const result = await db.query(query);
-    return res.status(200).json(result.rows);
+    const scores = await db.getAllScores();
+    const rows = scores
+      .slice()
+      .sort((a, b) => {
+        if (b.score !== a.score) return b.score - a.score;
+        return (b.time_survived_seconds || 0) - (a.time_survived_seconds || 0);
+      })
+      .slice(0, 10)
+      .map((row) => ({
+        id: row.id,
+        player: row.player_name,
+        score: row.score,
+        wave: row.wave_reached,
+        timeSurvived: row.time_survived_seconds,
+        kills: row.enemies_killed,
+        bossesDefeated: row.bosses_defeated,
+        date: row.played_at
+      }));
+
+    return res.status(200).json(rows);
   } catch (error) {
     console.error('Error en getTopScores:', error);
     return res.status(500).json({ error: 'Error al consultar el ranking' });
@@ -64,16 +69,15 @@ exports.getTopScores = async (req, res) => {
 // GET /api/stats - Métricas globales acumuladas
 exports.getStats = async (req, res) => {
   try {
-    const query = `
-      SELECT 
-        COUNT(*)::INT AS "totalGamesPlayed",
-        COALESCE(SUM(enemies_killed), 0)::BIGINT AS "totalEnemiesKilled",
-        COALESCE(SUM(bosses_defeated), 0)::INT AS "totalBossesDefeated",
-        COALESCE(MAX(score), 0)::BIGINT AS "highestScoreRecord"
-      FROM game_scores;
-    `;
-    const result = await db.query(query);
-    return res.status(200).json(result.rows[0]);
+    const scores = await db.getAllScores();
+    const stats = {
+      totalGamesPlayed: scores.length,
+      totalEnemiesKilled: scores.reduce((sum, row) => sum + (row.enemies_killed || 0), 0),
+      totalBossesDefeated: scores.reduce((sum, row) => sum + (row.bosses_defeated || 0), 0),
+      highestScoreRecord: scores.reduce((max, row) => Math.max(max, row.score || 0), 0)
+    };
+
+    return res.status(200).json(stats);
   } catch (error) {
     console.error('Error en getStats:', error);
     return res.status(500).json({ error: 'Error al consultar estadísticas globales' });

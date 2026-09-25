@@ -1,4 +1,25 @@
 {
-  "nextId": 1,
-  "scores": []
+  "nextId": 3,
+  "scores": [
+    {
+      "id": 1,
+      "player_name": "dddd",
+      "score": 0,
+      "wave_reached": 1,
+      "time_survived_seconds": 12,
+      "enemies_killed": 0,
+      "bosses_defeated": 0,
+      "played_at": "2026-09-25T06:50:12.093Z"
+    },
+    {
+      "id": 2,
+      "player_name": "daewfs",
+      "score": 0,
+      "wave_reached": 1,
+      "time_survived_seconds": 10,
+      "enemies_killed": 0,
+      "bosses_defeated": 0,
+      "played_at": "2026-09-25T06:51:01.611Z"
+    }
+  ]
 }

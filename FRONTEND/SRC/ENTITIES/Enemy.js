@@ -1,4 +1,16 @@
-// frontend/src/entities/Enemy.js
+/**
+ * Enemy — unidad de oleada con IA por arquetipo.
+ *
+ * FSM de lógica: SPAWN → CHASE / SEARCH → ATTACK → RETREAT → DEAD
+ * IA por tipo:
+ *  HUNTER   — persigue y golpea melee.
+ *  RANGER   — kiting (disparo a distancia / RETREAT si está cerca).
+ *  SWARM    — flocking: persigue + separación vía SpatialGrid.
+ *  TANK     — carga en línea recta.
+ *  KAMIKAZE — se acerca, arma explosión (primeTime) y daña en radio.
+ *
+ * Animación: walk/attack en spritesheet; flash de hit.
+ */
 import { Entity } from './Entity.js';
 import { CONFIG } from '../config.js';
 import { Pickup } from './Pickup.js';
@@ -35,7 +47,7 @@ export class Enemy extends Entity {
     this.exp = base.exp;
     this.color = base.color;
 
-    // FSM lógica: SPAWN -> SEARCH -> CHASE -> ATTACK -> RETREAT -> DEAD
+    /** FSM de IA (no confundir con animState visual). */
     this.state = 'SPAWN';
     this.stateTimer = 0.4; // Tiempo de materialización
     this.cooldownTimer = 0;
@@ -57,6 +69,7 @@ export class Enemy extends Entity {
     this.hitboxRadius = Math.max(this.radius, spriteSize * 0.38);
   }
 
+  /** Daño recibido; al morir dispara drops y evento Engine.onEnemyKilled. */
   takeDamage(amount, engine) {
     if (!this.active || this.state === 'SPAWN' || this.state === 'DEAD') return;
 
@@ -98,6 +111,7 @@ export class Enemy extends Entity {
     sfxThrottled('sfx_enemy_explode', 0.25, 70);
   }
 
+  /** Frames del sheet; el clip attack vuelve a walk al completar. */
   _updateAnimation(dt) {
     const spriteKey = `enemy_${this.type.toLowerCase()}`;
     const cfg = CONFIG.ASSETS.SPRITES[spriteKey];
@@ -117,6 +131,7 @@ export class Enemy extends Entity {
     }
   }
 
+  /** IA: vector al jugador + switch de FSM + colisión con muros. */
   update(dt, engine) {
     if (!this.active) return;
 
@@ -175,6 +190,7 @@ export class Enemy extends Entity {
     this.resolveObstacleCollisions(CONFIG.ARENA.OBSTACLES);
   }
 
+  /** Persecución específica por tipo (incluye flocking del SWARM). */
   _handleChase(dt, player, dist, dx, dy, engine) {
     const base = CONFIG.ENEMIES[this.type];
     const dirX = dist > 0.001 ? dx / dist : 0;
@@ -207,6 +223,7 @@ export class Enemy extends Entity {
         break;
 
       case 'SWARM': {
+        // Separación: suma vectores unitarios lejos de vecinos en el radio de flocking.
         let sepX = 0;
         let sepY = 0;
         const neighbors = engine.spatialGrid.query(this.x, this.y, base.separationDist);
@@ -260,6 +277,7 @@ export class Enemy extends Entity {
     }
   }
 
+  /** Acciones de combate al entrar en ATTACK (melee, disparo, carga, explosión). */
   _handleAttack(dt, player, dist, engine) {
     const base = CONFIG.ENEMIES[this.type];
 
@@ -340,6 +358,7 @@ export class Enemy extends Entity {
     }
   }
 
+  /** Sprite animado, estático o fallback neón; barra de HP solo en TANK. */
   draw(ctx) {
     if (!this.active) return;
 

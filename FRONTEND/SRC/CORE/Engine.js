@@ -1,5 +1,14 @@
-// frontend/src/core/Engine.js
+/**
+ * Engine — orquestador del bucle de juego.
+ *
+ * Responsabilidades:
+ *  - Bucle RAF (update + render) con dt acotado.
+ *  - Colisiones: balas vs enemigos (SpatialGrid), balas vs jefe, balas vs jugador, pickups.
+ *  - Eventos de UI: pausa, level-up, game over y guardado de score vía ApiService (Node.js).
+ *  - Combos, oleadas (WaveManager) y HUD / banner animado.
+ */
 import { CONFIG } from '../config.js';
+
 import { InputHandler } from './Input.js';
 import { Camera } from './Camera.js';
 import { SpatialGrid } from './SpatialGrid.js';
@@ -36,6 +45,7 @@ export class Engine {
     this.pickups = [];
     this.currentBoss = null;
 
+    /** Puntuación acumulada; se envía al servidor Node.js al guardar. */
     this.score = 0;
     this.kills = 0;
     this.bossesDefeated = 0;
@@ -109,8 +119,9 @@ export class Engine {
     this.pickups.push(new Pickup(cx + 200, cy - 60, 'exp', 30));
   }
 
+  /** Enlaza botones del modal de game over con el API REST de Node.js. */
   _setupUIListeners() {
-    // Guardar Puntuación
+    // Guardar Puntuación (POST /api/scores)
     const btnSave = document.getElementById('btn-save-score');
     if (btnSave) {
       btnSave.onclick = async () => {
@@ -228,6 +239,7 @@ export class Engine {
     }
   }
 
+  /** Arranca el bucle y la primera oleada (llamado desde el menú). */
   start() {
     this.isRunning = true;
     this.lastTime = performance.now();
@@ -239,6 +251,7 @@ export class Engine {
     requestAnimationFrame((time) => this._loop(time));
   }
 
+  /** Evento de muerte: suma combo y puntos. */
   onEnemyKilled(enemy) {
     this.kills++;
     this.comboCount++;
@@ -247,6 +260,7 @@ export class Engine {
     this.score += Math.floor(CONFIG.SCORING.KILL_BASE * this.comboMult);
   }
 
+  /** Evento de jefe derrotado: bonus de score y limpia currentBoss. */
   onBossDefeated(boss) {
     this.bossesDefeated++;
     this.score += Math.floor(CONFIG.SCORING.BOSS_BASE * this.comboMult);
@@ -255,6 +269,7 @@ export class Engine {
     assetManager.playSound('sfx_boom', 0.7);
   }
 
+  /** Pausa el gameplay y ofrece 3 mejoras aleatorias (evento de progresión). */
   triggerLevelUp() {
     this.isPaused = true;
 
@@ -320,6 +335,7 @@ export class Engine {
     document.getElementById('modal-levelup')?.classList.add('active');
   }
 
+  /** Evento de muerte del jugador: modal + carga ranking desde Node.js. */
   async onGameOver() {
     this.isGameOver = true;
 
@@ -339,6 +355,7 @@ export class Engine {
     await this.loadLeaderboard();
   }
 
+  /** GET /api/scores — ranking desde el backend Node.js. */
   async loadLeaderboard() {
     const scores = await ApiService.getTopScores();
     const tbody = document.getElementById('scores-tbody');
@@ -363,6 +380,10 @@ export class Engine {
     });
   }
 
+  /**
+   * Bucle principal (requestAnimationFrame).
+   * dt se recorta a 0.1s para que un spike no teletransporte entidades.
+   */
     _loop(currentTime) {
     if (!this.isRunning) return;
 
@@ -380,6 +401,7 @@ export class Engine {
     requestAnimationFrame((time) => this._loop(time));
   }
 
+  /** Un frame de simulación: input → entidades → colisiones → partículas. */
   update(dt) {
     this.gameTime += dt;
 
@@ -405,6 +427,7 @@ export class Engine {
 
     this.waveManager.update(dt);
 
+    // Hash espacial: solo enemigos; las consultas de balas evitan O(n²).
     this.spatialGrid.clear();
     for (let i = 0; i < this.enemies.length; i++) {
       this.spatialGrid.insert(this.enemies[i]);
@@ -420,7 +443,7 @@ export class Engine {
       this.currentBoss.update(dt, this);
     }
 
-    // Colisiones proyectiles jugador
+    // --- COLISIONES: proyectiles del jugador vs jefe y vs enemigos cercanos ---
     const activePlayerBullets = this.playerBulletsPool.getActive();
     for (let i = 0; i < activePlayerBullets.length; i++) {
       const b = activePlayerBullets[i];
@@ -444,7 +467,7 @@ export class Engine {
       }
     }
 
-    // Balas enemigas
+    // --- COLISIONES: proyectiles enemigos vs jugador (círculo-círculo) ---
     const activeEnemyBullets = this.enemyBulletsPool.getActive();
     for (let i = 0; i < activeEnemyBullets.length; i++) {
       const b = activeEnemyBullets[i];
@@ -457,7 +480,7 @@ export class Engine {
       }
     }
 
-    // Pickups y absorción
+    // --- COLISIONES: pickups (tras magnetismo) vs jugador ---
     for (let i = this.pickups.length - 1; i >= 0; i--) {
       const p = this.pickups[i];
       p.update(dt, this.player);
@@ -490,6 +513,7 @@ export class Engine {
     this.arenaRenderer.updateAmbient(this.particleSystem, dt);
   }
 
+  /** Dibuja mundo (espacio cámara) y luego HUD en espacio de pantalla. */
   render() {
     this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
 
@@ -530,6 +554,7 @@ export class Engine {
     this.debug.render(this.ctx, this);
   }
 
+  /** Animación de banner: fade in/out + escala al cambiar de oleada. */
   _drawWaveBanner() {
     const b = this.waveBanner;
     if (b.timer <= 0) return;

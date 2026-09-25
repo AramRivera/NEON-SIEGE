@@ -82,6 +82,7 @@ export class DebugOverlay {
   }
 
   // Se llama DESDE el espacio de mundo (dentro del translate de la cámara)
+  /** Hitboxes, vectores de IA y obstáculos en espacio de mundo (tras cámara). */
   renderWorldLayer(ctx, engine) {
     this.renderWorld(ctx, engine);
   }
@@ -216,6 +217,9 @@ export class DebugOverlay {
 
     // ============================================================
   //  CAPAS DE MUNDO (se dibujan dentro del translate de la cámara)
+  // ============================================================
+  // ============================================================
+  //  CAPA MUNDO — hitboxes, paths de IA, magnetismo, cover
   // ============================================================
     renderWorld(ctx, engine) {
     if (!this.enabled) return;

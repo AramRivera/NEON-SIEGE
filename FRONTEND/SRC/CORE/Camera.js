@@ -1,4 +1,7 @@
-// frontend/src/core/Camera.js
+/**
+ * Cámara 2D que sigue al jugador con interpolación (lerp).
+ * Se clampa al tamaño de la arena para no mostrar vacío fuera del mapa.
+ */
 import { CONFIG } from '../config.js';
 
 export class Camera {
@@ -15,6 +18,7 @@ export class Camera {
     this.h = h || this.h;
   }
 
+  /** Centra suavemente el viewport sobre el objetivo (x, y mundo). */
   follow(targetX, targetY) {
     if (typeof targetX !== 'number' || typeof targetY !== 'number') return;
 

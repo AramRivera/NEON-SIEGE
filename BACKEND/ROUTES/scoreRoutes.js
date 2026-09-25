@@ -1,4 +1,9 @@
-// backend/routes/scoreRoutes.js
+/**
+ * Rutas REST montadas en /api.
+ * POST /scores → guardar partida
+ * GET  /scores → top 10
+ * GET  /stats  → métricas globales
+ */
 const express = require('express');
 const router = express.Router();
 const scoreController = require('../CONTROLLERS/scoreController');

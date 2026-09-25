@@ -1,3 +1,9 @@
+/**
+ * Proyectil reutilizable (ObjectPool).
+ * Movimiento: integración euler con alcance restante.
+ * Colisión con obstáculos: punto dentro de AABB (se desactiva al impactar muro).
+ * hitsLeft / penetration permiten atravesar varios enemigos (plasma).
+ */
 import { Entity } from './Entity.js';
 import { assetManager } from '../SYSTEMS/AssetManager.js';
 
@@ -17,6 +23,7 @@ export class Projectile {
     this.isEnemy = false;
   }
 
+  /** Primera firma (sobrescrita más abajo): se deja por compatibilidad con el pool. */
   spawn(x, y, angle, speed, damage, range, color, penetration = 1, isEnemy = false) {
     this.x = x;
     this.y = y;
@@ -32,6 +39,10 @@ export class Projectile {
     this.active = true;
   }
 
+  /**
+   * Integra posición, agota alcance y comprueba colisión punto-AABB con cover.
+   * Las colisiones contra entidades se resuelven en Engine.update.
+   */
   update(dt, obstacles) {
     if (!this.active) return;
 
@@ -63,6 +74,7 @@ export class Projectile {
     }
   }
 
+  /** Recicla la instancia: vector de velocidad, sprite y penetración. */
   spawn(x, y, angle, speed, damage, range, color, penetration = 1, isEnemy = false, spriteKey = null) {
     this.x = x;
     this.y = y;
@@ -80,6 +92,7 @@ export class Projectile {
     this.active = true;
   }
 
+  /** Dibujo: sprite rotado según ángulo de vuelo, o círculo con glow. */
     draw(ctx) {
     if (!this.active) return;
 

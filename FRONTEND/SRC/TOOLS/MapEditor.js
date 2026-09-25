@@ -1,6 +1,8 @@
-// frontend/src/tools/MapEditor.js
-// Neon Siege — Editor de Arenas v2
-
+/**
+ * MapEditor — herramienta de diseño de arenas (editor.html).
+ * Eventos: pintar/borrar tiles, pan con espacio, zoom, undo/redo, autosave.
+ * Algoritmos: flood fill, línea/rectángulo de pincel, RLE del suelo al exportar JSON.
+ */
 const TILE_SIZE = 64;
 
 const PALETTE = [
@@ -121,6 +123,7 @@ class MapEditor {
     if (idx >= 0 && idx < PALETTE.length) this.selectTool(PALETTE[idx]);
   }
 
+  /** Eventos de teclado, ratón, rueda y botones de la barra (export/import). */
   setupListeners() {
     window.addEventListener('resize', () => { this.resizeCanvas(); this.render(); });
 
@@ -345,6 +348,10 @@ class MapEditor {
     }
   }
 
+  /**
+   * Flood fill 4-conectado sobre la capa de suelo.
+   * Cola BFS: pinta celdas con el mismo id que el origen con la herramienta actual.
+   */
   _floodFill(startCol, startRow) {
     const tool = this.selectedTool;
     if (tool.category === 'marker') return;
@@ -497,6 +504,7 @@ class MapEditor {
     this.render(); this.updateStats(); this._scheduleAutoSave();
   }
 
+  /** Serializa capas, spawns y obstáculos para el juego o el archivo .json. */
   generateMapData() {
     const obstacles = [];
     for (let r = 0; r < this.rows; r++) {
@@ -520,6 +528,7 @@ class MapEditor {
     };
   }
 
+  /** Compresión RLE de ids de suelo (runs de tiles iguales). */
   _encodeFloor() {
     const out = [];
     let cur = this.floorLayer[0];
@@ -646,6 +655,7 @@ class MapEditor {
     this.ctx.fillText(text, x, y);
   }
 
+  /** Dibuja grid, tiles, marcadores de spawn y el preview del pincel. */
   render() {
     this.ctx.setTransform(1, 0, 0, 1, 0, 0);
     this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);

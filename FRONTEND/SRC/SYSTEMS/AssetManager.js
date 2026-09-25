@@ -119,6 +119,7 @@ export class AssetManager {
   // ------------------------------------------------------------
   //  AUDIO — EFECTOS (SFX)
   // ------------------------------------------------------------
+  /** Reproduce SFX clonando el Audio para permitir solapes (muchos disparos). */
   playSound(key, volume = 0.5) {
     if (!CONFIG.ASSETS.USE_AUDIO) return;
     const sound = this.sounds.get(key);

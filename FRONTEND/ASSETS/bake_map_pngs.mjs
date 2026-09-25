@@ -1,4 +1,8 @@
-// Hornea PNGs de mapa con Node (zlib nativo). Cero librerías, cero motores.
+/**
+ * Script Node.js: genera PNGs de tiles/FX sin librerías.
+ * Algoritmo PNG: CRC32 + chunks IHDR/IDAT/IEND y deflate (zlib).
+ * Se ejecuta offline para hornear texturas de ArenaRenderer.
+ */
 import { deflateSync } from 'node:zlib';
 import { mkdirSync, writeFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
@@ -27,6 +31,7 @@ function chunk(type, data) {
   return Buffer.concat([len, crcSrc, crc]);
 }
 
+/** Ensambla un PNG RGBA 8-bit (filtro None por fila + zlib). */
 function encodePng(w, h, rgba) {
   const raw = Buffer.alloc((w * 4 + 1) * h);
   for (let y = 0; y < h; y++) {

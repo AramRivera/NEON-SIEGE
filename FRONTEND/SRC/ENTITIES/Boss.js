@@ -1,4 +1,11 @@
-// frontend/src/entities/Boss.js
+/**
+ * Boss — jefe de oleada con 3 fases según umbral de HP (60% / 30%).
+ *
+ * GOLIATH: persigue, ráfaga radial de proyectiles; en F3 invoca SWARM.
+ * TEMPEST: persigue, teletransporte táctico y abanico de 5 disparos.
+ *
+ * Contacto cuerpo a cuerpo daña al jugador. Animación: idle/walk/attack/special/die.
+ */
 import { Entity } from './Entity.js';
 import { CONFIG } from '../config.js';
 import { Enemy } from './Enemy.js';
@@ -17,6 +24,7 @@ export class Boss extends Entity {
     this.hp = this.maxHp;
     this.exp = data.exp;
 
+    /** Fase de IA: 1 (≥60% HP), 2 (60–30%), 3 (<30%). */
     this.phase = 1; // 1: 100-60%, 2: 60-30%, 3: 30-0%
     this.actionTimer = 0;
     this.supportTimer = 0;
@@ -36,6 +44,7 @@ export class Boss extends Entity {
     this.hitboxRadius = Math.max(this.radius, bossSize * 0.42);
   }
 
+  /** Daño al jefe; al 0 HP reproduce die y llama _onDefeat. */
   takeDamage(amount, engine) {
     if (!this.active || this.state === 'die') return;
     this.hp -= amount;
@@ -77,6 +86,7 @@ export class Boss extends Entity {
     assetManager.playSound('sfx_boss_explode', 0.8);
   }
 
+  /** Frames del sheet; attack/special vuelven a idle. */
   _updateAnimation(dt) {
     const spriteKey = this.kind === 'GOLIATH' ? 'boss_goliath' : 'boss_tempest';
     const cfg = CONFIG.ASSETS.SPRITES[spriteKey];
@@ -100,6 +110,7 @@ export class Boss extends Entity {
     }
   }
 
+  /** Actualiza fase por HP, despacha IA del arquetipo y colisión de contacto. */
   update(dt, engine) {
     if (!this.active && this.state !== 'die') return;
 
@@ -138,6 +149,7 @@ export class Boss extends Entity {
     this.resolveObstacleCollisions(CONFIG.ARENA.OBSTACLES);
   }
 
+  /** IA Goliath: chase + burst circular; F3 spawnea 3 SWARM. */
   _updateGoliath(dt, player, dist, dx, dy, engine) {
     const fCfg = CONFIG.BOSSES.GOLIATH.fases[`F${this.phase}`];
     this.x += (dx / dist) * fCfg.speed * dt;
@@ -182,6 +194,7 @@ export class Boss extends Entity {
     }
   }
 
+  /** IA Tempest: chase + teleport cerca del jugador + ráfaga en abanico. */
   _updateTempest(dt, player, dist, dx, dy, angle, engine) {
     const fCfg = CONFIG.BOSSES.TEMPEST.fases[`F${this.phase}`];
     this.x += (dx / dist) * fCfg.speed * dt;
@@ -224,6 +237,7 @@ export class Boss extends Entity {
     }
   }
 
+  /** Sprite de jefe (flip hacia el jugador) o círculo de fase si falta asset. */
   draw(ctx) {
     if (!this.active && this.state !== 'die') return;
 

@@ -1,4 +1,7 @@
-// frontend/src/entities/Entity.js
+/**
+ * Entidad base: posición, radio de movimiento y hitbox visual desplazada.
+ * Player, Enemy y Boss heredan clamp de arena y resolución círculo-AABB.
+ */
 import { CONFIG } from '../config.js';
 
 export class Entity {
@@ -12,6 +15,7 @@ export class Entity {
     this.active = true;
   }
 
+  /** Centro y radio de colisión (el sprite ancla en los pies). */
   getHitX() {
     return this.x;
   }
@@ -30,7 +34,10 @@ export class Entity {
     this.y = Math.max(this.radius, Math.min(CONFIG.ARENA.HEIGHT - this.radius, this.y));
   }
 
-  // Resuelve colisiones circulares contra rectángulos (AABB) de obstáculos
+  /**
+   * Colisión círculo vs AABB: empuja al círculo fuera del rectángulo
+   * usando el punto más cercano del obstáculo.
+   */
   resolveObstacleCollisions(obstacles) {
     for (let i = 0; i < obstacles.length; i++) {
       const box = obstacles[i];

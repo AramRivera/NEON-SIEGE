@@ -1,4 +1,7 @@
-// backend/controllers/scoreController.js
+/**
+ * Controladores de puntuación: validan el body y hablan con db.js.
+ * Respuestas JSON consumidas por ApiService.js y MainMenu._fetchLeaderboard.
+ */
 const db = require('../CONFIG/db.js');
 
 // POST /api/scores - Guardar partida

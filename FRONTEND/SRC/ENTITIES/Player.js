@@ -1,4 +1,9 @@
-// frontend/src/entities/Player.js
+/**
+ * Player — piloto controlable.
+ * Lógica: movimiento 8-dir, dash con energía, 3 armas, magnetismo de pickups.
+ * Animación: FSM idle/walk/attack/hurt/die según spritesheet del arma activa.
+ * Colisiones: clamp de arena + obstáculos AABB (Entity).
+ */
 import { Entity } from './Entity.js';
 import { CONFIG } from '../config.js';
 import { assetManager } from '../SYSTEMS/AssetManager.js';
@@ -41,7 +46,7 @@ export class Player extends Entity {
     this.dashDir = { x: 0, y: 0 };
     this.invulnerableTimer = 0;
 
-    // FSM de animaciones
+    /** FSM visual (independiente del cooldown de disparo). */
     this.state = 'idle';
     this.frameIndex = 0;
     this.frameTimer = 0;
@@ -53,6 +58,7 @@ export class Player extends Entity {
     this.ammo[weaponKey] = Math.min(max, this.ammo[weaponKey] + amount);
   }
 
+  /** Colisión de daño: i-frames + dash anulan el hit. */
   takeDamage(amount, particleSystem) {
     if (this.invulnerableTimer > 0 || this.isDashing || !this.active) return;
     this.hp -= amount;
@@ -72,6 +78,7 @@ export class Player extends Entity {
     }
   }
 
+  /** Dash: consume energía y aplica un impulso corto (invulnerable implícito). */
   dash(moveDir, particleSystem) {
     if (this.isDashing || this.energy < CONFIG.PLAYER.DASH_COST) return;
     if (moveDir.vx === 0 && moveDir.vy === 0) return;
@@ -91,6 +98,10 @@ export class Player extends Entity {
     }
   }
 
+  /**
+   * Disparo: gasta munición/energía, aplica spread y saca balas del ObjectPool.
+   * pellets extra de level-up solo afectan a la escopeta.
+   */
   shoot(bulletsPool, particleSystem) {
     const weapon = CONFIG.WEAPONS[this.currentWeaponKey];
     const mods = this.weaponModifiers[this.currentWeaponKey];
@@ -157,6 +168,7 @@ export class Player extends Entity {
     }
   }
 
+  /** Sube de nivel cuando exp >= expNext (curva 1.45). Devuelve true si hubo level-up. */
   addExp(amount) {
     this.exp += amount;
     if (this.exp >= this.expNext) {
@@ -168,6 +180,7 @@ export class Player extends Entity {
     return false;
   }
 
+  /** Avanza frames del spritesheet; attack/hurt vuelven a idle al terminar. */
   _updateAnimation(dt) {
     let sheetKey = 'player_pistol';
     if (this.currentWeaponKey === 'SHOTGUN') sheetKey = 'player_shotgun';
@@ -195,6 +208,7 @@ export class Player extends Entity {
     }
   }
 
+  /** Lógica de un frame: energía, apuntado al mouse, dash, armas 1-3, disparo LMB. */
   update(dt, engine) {
     if (!this.active && this.state !== 'die') return;
 
@@ -247,6 +261,7 @@ export class Player extends Entity {
     this.resolveObstacleCollisions(CONFIG.ARENA.OBSTACLES);
   }
 
+  /** Sprite del arma + flipX según ángulo de apuntado; parpadeo en i-frames. */
   draw(ctx) {
     SpriteRenderer.drawShadow(ctx, this.x, this.y, this.radius);
 

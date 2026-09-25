@@ -1,7 +1,12 @@
-// frontend/src/systems/ParticleSystem.js
+/**
+ * ParticleSystem — FX de chispas y explosiones.
+ * Cada partícula es un círculo con vida que se desvanece (animación de alpha).
+ * Usa ObjectPool para no crear objetos por impacto.
+ */
 import { ObjectPool } from './ObjectPool.js';
 import { CONFIG } from '../config.js';
 
+/** Instancia de pool: posición, velocidad, color, radio y lifetime. */
 class Particle {
   constructor() {
     this.active = false;
@@ -56,6 +61,7 @@ export class ParticleSystem {
     this.pool = new ObjectPool(() => new Particle(), CONFIG.POOLS.PARTICLES);
   }
 
+  /** Ráfaga radial (muerte, kamikaze, jefe). */
   emitExplosion(x, y, color = '#ff0055', count = 30) {
     for (let i = 0; i < count; i++) {
       const p = this.pool.get();
@@ -68,6 +74,7 @@ export class ParticleSystem {
     }
   }
 
+  /** Chispas cortas (disparo, pickup, dash). */
   emitSparks(x, y, color = '#00f0ff', count = 10) {
     for (let i = 0; i < count; i++) {
       const p = this.pool.get();

@@ -1,5 +1,7 @@
-// backend/config/db.js
-// Almacén de puntuaciones en JSON (sin base de datos).
+/**
+ * Persistencia de scores en scores.json (sin PostgreSQL).
+ * withLock serializa escrituras para no corromper el JSON con POSTs concurrentes.
+ */
 const fs = require('fs/promises');
 const path = require('path');
 
@@ -30,12 +32,14 @@ async function writeStore(store) {
   await fs.writeFile(DATA_FILE, JSON.stringify(store, null, 2), 'utf8');
 }
 
+/** Cola de promesas: una escritura a la vez. */
 function withLock(fn) {
   const run = writeQueue.then(fn, fn);
   writeQueue = run.then(() => undefined, () => undefined);
   return run;
 }
 
+/** Inserta un registro y asigna id autoincremental. */
 async function insertScore(entry) {
   return withLock(async () => {
     const store = await readStore();
@@ -55,6 +59,7 @@ async function insertScore(entry) {
   });
 }
 
+/** Lee todo el historial (el ranking se ordena en el controlador). */
 async function getAllScores() {
   const store = await readStore();
   return store.scores;

@@ -1,4 +1,8 @@
-// frontend/src/core/SpatialGrid.js
+/**
+ * Spatial hash grid: divide la arena en celdas para consultas de vecindad.
+ * Algoritmo: insertar entidades en todas las celdas que cubre su hitbox;
+ * query() une las celdas que intersectan un círculo (balas, swarm).
+ */
 export class SpatialGrid {
   constructor(width, height, cellSize) {
     this.cellSize = cellSize;
@@ -13,6 +17,7 @@ export class SpatialGrid {
     }
   }
 
+  /** Celdas cubiertas por el círculo de hit (incluye offset vertical del sprite). */
   _getIndices(entity) {
     const r = typeof entity.getHitRadius === 'function' ? entity.getHitRadius() : entity.radius;
     const hitY = typeof entity.getHitY === 'function' ? entity.getHitY() : entity.y;
@@ -23,6 +28,7 @@ export class SpatialGrid {
     return { minX, maxX, minY, maxY };
   }
 
+  /** Inserta la entidad en cada celda que cubre su AABB de hitbox. */
   insert(entity) {
     const { minX, maxX, minY, maxY } = this._getIndices(entity);
     for (let y = minY; y <= maxY; y++) {

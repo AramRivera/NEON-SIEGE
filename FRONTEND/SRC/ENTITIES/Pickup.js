@@ -1,5 +1,10 @@
+/**
+ * Pickup — item de suelo (exp, cura, munición).
+ * Lógica: magnetismo hacia el jugador si entra en magnetRadius.
+ * Animación: bob senoidal en el sprite.
+ */
 import { assetManager } from '../SYSTEMS/AssetManager.js';
-// frontend/src/entities/Pickup.js
+
 export class Pickup {
   constructor(x, y, type = 'exp', value = 10, targetWeapon = null) {
     this.x = x;
@@ -18,6 +23,7 @@ export class Pickup {
     else this.color = '#ffd700';
   }
 
+  /** Atrae el item hacia el jugador; la velocidad crece al acercarse. */
   update(dt, player) {
     if (!this.active || !player) return;
 

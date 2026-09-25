@@ -65,6 +65,7 @@ export class SpriteRenderer {
   // ------------------------------------------------------------
   //  SPRITE ANIMADO (acepta spritesheets y frames individuales)
   // ------------------------------------------------------------
+  /** Recorta un frame (fila × columna) o cae a sprite estático. */
   static drawAnimatedSprite({
     ctx,
     imageKey,

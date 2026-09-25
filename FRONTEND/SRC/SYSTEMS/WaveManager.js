@@ -1,4 +1,8 @@
-// frontend/src/systems/WaveManager.js
+/**
+ * WaveManager — progresión de oleadas.
+ * Algoritmo: cuenta enemigos a spawnear, intervalo que se reduce, stats en potencia.
+ * Al vaciar la arena (sin jefe) avanza de oleada. Cada BOSS_INTERVAL spawnea un jefe.
+ */
 import { CONFIG } from '../config.js';
 import { Enemy } from '../ENTITIES/Enemy.js';
 import { Boss } from '../ENTITIES/Boss.js';
@@ -14,6 +18,7 @@ export class WaveManager {
     this.waveActive = false;
   }
 
+  /** Prepara cupo, intervalo, banner y opcionalmente un jefe. */
     startWave(waveNumber) {
     this.currentWave = waveNumber;
     this.waveActive = true;
@@ -43,6 +48,7 @@ export class WaveManager {
       : `OLEADA ${waveNumber}`;
   }
 
+  /** Multiplicadores exponenciales de HP / daño / velocidad por oleada. */
   getMultipliers() {
     const sc = CONFIG.WAVES.STAT_SCALING_PER_WAVE;
     return {
@@ -52,6 +58,7 @@ export class WaveManager {
     };
   }
 
+  /** Spawnea a ritmo de spawnInterval y avanza de oleada al limpiar la arena. */
   update(dt) {
     if (!this.waveActive) return;
 
@@ -70,6 +77,7 @@ export class WaveManager {
     }
   }
 
+  /** Spawnea fuera del FOV (~480px) y desbloquea tipos según número de oleada. */
   spawnEnemy() {
     const player = this.engine.player;
     let x, y, dist;

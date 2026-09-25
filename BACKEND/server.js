@@ -1,4 +1,8 @@
-// backend/server.js
+/**
+ * Servidor Node.js / Express de Neon Siege.
+ * Orden: CORS + JSON → rutas /api → healthcheck → estáticos del frontend.
+ * El cliente usa CONFIG.API.BASE_URL (puerto 4000 en desarrollo).
+ */
 const express = require('express');
 const cors = require('cors');
 const path = require('path');

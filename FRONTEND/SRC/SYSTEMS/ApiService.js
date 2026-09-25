@@ -1,7 +1,12 @@
-// frontend/src/systems/ApiService.js
+/**
+ * ApiService — cliente HTTP del frontend hacia Node.js/Express.
+ * BASE_URL: CONFIG.API (por defecto http://localhost:4000/api).
+ * Endpoints: POST /scores, GET /scores, GET /stats.
+ */
 import { CONFIG } from '../config.js';
 
 export class ApiService {
+  /** Persiste una partida (nombre, score, oleada, tiempo, kills, jefes). */
   static async saveScore(payload) {
     try {
       const response = await fetch(`${CONFIG.API.BASE_URL}/scores`, {
@@ -17,6 +22,7 @@ export class ApiService {
     }
   }
 
+  /** Ranking top 10. */
   static async getTopScores() {
     try {
       const response = await fetch(`${CONFIG.API.BASE_URL}/scores`);
@@ -28,6 +34,7 @@ export class ApiService {
     }
   }
 
+  /** Agregados globales (partidas, kills, jefes, récord). */
   static async getStats() {
     try {
       const response = await fetch(`${CONFIG.API.BASE_URL}/stats`);

@@ -1,11 +1,14 @@
-// frontend/src/config.js
-// Configuración centralizada y editable de Neon Siege
-
+/**
+ * CONFIG — tabla de diseño del juego.
+ * Concentra balance, geometría de la arena, rutas de assets y la URL del API Node.js.
+ * Cambiar valores aquí evita tocar lógica en Engine / entidades.
+ */
 export const CONFIG = {
-  // Configuración del Servidor y API
+  /** Cliente HTTP hacia Express (puntuaciones y ranking). */
   API: {
     BASE_URL: 'http://localhost:4000/api'
   },
+
 
 // Dimensiones y Físicas de la Arena
   ARENA: {

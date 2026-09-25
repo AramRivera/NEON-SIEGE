@@ -1,11 +1,17 @@
 // frontend/src/systems/ArenaRenderer.js
-// Arena cibernética por capas: parallax, piso variado, decals, AO, muros teselados, neon y viñeta.
-
+/**
+ * ArenaRenderer — dibujo del mundo (no gameplay).
+ *
+ * Algoritmo de suelo: hash2 elige variante de tile por celda 64px; hazard en pistas.
+ * Animaciones ambientales: barrido de scan, holo de plaza, luces, partículas de ventilación.
+ * Obstáculos: tesela textura de caja sobre los AABB de CONFIG.ARENA.OBSTACLES.
+ */
 import { CONFIG } from '../config.js';
 import { assetManager } from './AssetManager.js';
 
 const T = 64;
 
+/** Hash determinista [0,1] para variación de tiles (mismo mapa siempre). */
 function hash2(x, y) {
   let n = (x * 374761393 + y * 668265263) | 0;
   n = Math.imul(n ^ (n >>> 13), 1274126177);
@@ -34,6 +40,7 @@ export class ArenaRenderer {
     this._boxSrc = null;
   }
 
+  /** Compone tiles, suelo offscreen, patrón de scan y luces (una sola vez). */
   ensureReady() {
     if (this.ready) return;
     this._buildTiles();
@@ -173,6 +180,7 @@ export class ArenaRenderer {
     return onRing || runwayN || runwayS || laneW || laneE;
   }
 
+  /** Rasteriza el piso completo a un canvas cacheado (no se rehace cada frame). */
   _buildFloor() {
     const c = makeCanvas(this.w, this.h);
     const ctx = c.getContext('2d');
@@ -304,6 +312,7 @@ export class ArenaRenderer {
     ];
   }
 
+  /** Emite chispas periódicas en ventilaciones (animación de ambiente). */
   updateAmbient(particles, dt) {
     this._ventAcc += dt;
     if (this._ventAcc < 0.18) return;
@@ -313,6 +322,7 @@ export class ArenaRenderer {
     particles.emitSparks(v.x, v.y, color, 3);
   }
 
+  /** Orden de capas: parallax → suelo → FX animados → obstáculos → borde. */
   drawWorld(ctx, time, camera) {
     this.ensureReady();
     ctx.imageSmoothingEnabled = true;
@@ -330,6 +340,7 @@ export class ArenaRenderer {
     this._drawArenaBorder(ctx, time);
   }
 
+  /** Fondo de rejilla que se mueve más lento que la cámara (parallax). */
   _drawParallax(ctx, camX, camY) {
     ctx.save();
     ctx.translate(camX * 0.38, camY * 0.38);
@@ -353,6 +364,7 @@ export class ArenaRenderer {
     ctx.restore();
   }
 
+  /** Barrido vertical cíclico (animación de “escáner”). */
   _drawScanSweep(ctx, time) {
     const y = ((time * 85) % (this.h + 240)) - 120;
     const g = ctx.createLinearGradient(0, y - 50, 0, y + 50);
@@ -363,6 +375,7 @@ export class ArenaRenderer {
     ctx.fillRect(0, y - 50, this.w, 100);
   }
 
+  /** Anillo holográfico pulsante en la plaza central. */
   _drawPlazaHolo(ctx, time) {
     const cx = this.w / 2;
     const cy = this.h / 2;
@@ -438,6 +451,10 @@ export class ArenaRenderer {
     }
   }
 
+  /**
+   * Cover jugable: recorta textura de caja a cada rectángulo de colisión.
+   * La geometría real de colisión sigue siendo CONFIG.ARENA.OBSTACLES.
+   */
   _drawObstacles(ctx) {
     const list = CONFIG.ARENA.OBSTACLES;
     const wall = this._wallSrc || this.tiles.wall;
@@ -489,6 +506,7 @@ export class ArenaRenderer {
     ctx.restore();
   }
 
+  /** Viñeta de pantalla + scanlines (post-proceso, no mundo). */
   drawOverlay(ctx, sw, sh, time) {
     this.ensureReady();
     ctx.save();

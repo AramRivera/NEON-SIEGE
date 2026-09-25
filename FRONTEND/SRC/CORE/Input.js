@@ -1,4 +1,7 @@
-// frontend/src/core/Input.js
+/**
+ * Captura eventos de teclado y ratón.
+ * Convierte WASD/flechas en un vector 8-dir y el cursor a coordenadas de mundo.
+ */
 export class InputHandler {
   constructor(canvas) {
     this.canvas = canvas;
@@ -14,6 +17,7 @@ export class InputHandler {
     this._setupListeners();
   }
 
+  /** Eventos window/canvas: keys persistentes y botón izquierdo del ratón. */
   _setupListeners() {
     window.addEventListener('keydown', (e) => {
       this.keys[e.code] = true;

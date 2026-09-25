@@ -1,4 +1,7 @@
-// frontend/src/ui/MainMenu.js
+/**
+ * MainMenu — eventos de UI del overlay inicial.
+ * Play arranca Engine.start(); ranking consulta el API Node.js (GET /api/scores).
+ */
 import { CONFIG } from '../config.js';
 
 export class MainMenu {
@@ -41,6 +44,7 @@ export class MainMenu {
     this._loadInitialSettings();
   }
 
+  /** Listeners de botones y ajustes (localStorage). */
   _bindEvents() {
     // Iniciar el juego
     this.btnPlay.addEventListener('click', () => {
@@ -143,6 +147,7 @@ export class MainMenu {
     this.engine.masterVolume = savedVol;
   }
 
+  /** Fetch directo al backend Node.js para pintar el top 10. */
   async _fetchLeaderboard() {
     this.lbBody.innerHTML = '<tr><td colspan="4" style="text-align:center;">Conectando a la base de datos...</td></tr>';
     try {

@@ -1,4 +1,7 @@
-// frontend/src/systems/ObjectPool.js
+/**
+ * ObjectPool — reutilización de instancias (balas y partículas).
+ * Evita GC en el hot path: get() marca activo; si el pool está lleno, descarta.
+ */
 export class ObjectPool {
   constructor(factoryFn, capacity) {
     this.factoryFn = factoryFn;

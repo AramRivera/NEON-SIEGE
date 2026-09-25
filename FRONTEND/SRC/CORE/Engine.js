@@ -578,21 +578,58 @@ export class Engine {
     const p = this.player;
     const w = CONFIG.WEAPONS[p.currentWeaponKey];
 
-    // Barra de Jefe
+        // ========================================================
+    //  BARRA DE JEFE (debajo del panel de score)
+    // ========================================================
     if (this.currentBoss) {
-      const bw = 400;
+      const bw = 460;
+      const bh = 18;
       const bx = (this.canvas.width - bw) / 2;
-      this.ctx.fillStyle = 'rgba(0,0,0,0.8)';
-      this.ctx.fillRect(bx, 20, bw, 14);
-      this.ctx.fillStyle = '#ff0055';
-      this.ctx.fillRect(bx, 20, (this.currentBoss.hp / this.currentBoss.maxHp) * bw, 14);
-      this.ctx.strokeStyle = '#fff';
-      this.ctx.strokeRect(bx, 20, bw, 14);
+      const by = 92;   // <-- debajo del panel de score (que llega hasta ~76)
 
-      this.ctx.font = 'bold 12px monospace';
-      this.ctx.fillStyle = '#fff';
+      const bossRatio = this.currentBoss.hp / this.currentBoss.maxHp;
+
+      // Nombre + Fase (encima de la barra)
       this.ctx.textAlign = 'center';
-      this.ctx.fillText(`${this.currentBoss.name} [FASE ${this.currentBoss.phase}]`, this.canvas.width / 2, 16);
+      this.ctx.textBaseline = 'alphabetic';
+      this.ctx.font = 'bold 12px monospace';
+      this.ctx.fillStyle = '#ff0077';
+      this.ctx.shadowBlur = 8;
+      this.ctx.shadowColor = '#ff0077';
+      this.ctx.fillText(
+        `${this.currentBoss.name}  [FASE ${this.currentBoss.phase}]`,
+        this.canvas.width / 2,
+        by - 6
+      );
+      this.ctx.shadowBlur = 0;
+
+      // Fondo de la barra
+      this.ctx.fillStyle = 'rgba(0,0,0,0.8)';
+      this.ctx.fillRect(bx, by, bw, bh);
+
+      // Relleno (color según ratio)
+      const bossColor = bossRatio > 0.5 ? '#ff0055' : (bossRatio > 0.25 ? '#ff5500' : '#ff0000');
+      this.ctx.fillStyle = bossColor;
+      this.ctx.shadowBlur = 10;
+      this.ctx.shadowColor = bossColor;
+      this.ctx.fillRect(bx, by, bw * bossRatio, bh);
+      this.ctx.shadowBlur = 0;
+
+      // Marco
+      this.ctx.strokeStyle = '#ff0077';
+      this.ctx.lineWidth = 2;
+      this.ctx.strokeRect(bx, by, bw, bh);
+
+      // Segmentos (10 divisiones)
+      this.ctx.strokeStyle = 'rgba(0,0,0,0.4)';
+      this.ctx.lineWidth = 1;
+      for (let i = 1; i < 10; i++) {
+        const sx = bx + (bw / 10) * i;
+        this.ctx.beginPath();
+        this.ctx.moveTo(sx, by);
+        this.ctx.lineTo(sx, by + bh);
+        this.ctx.stroke();
+      }
     }
 
         // ========================================================

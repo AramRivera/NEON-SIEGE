@@ -308,7 +308,7 @@ export const CONFIG = {
       sfx_hit:            './ASSETS/AUDIO/SFX/hit.wav',
       sfx_pickup:         './ASSETS/AUDIO/SFX/pickup.wav',
       sfx_levelup:        './ASSETS/AUDIO/SFX/levelup.wav',
-      sfx_wave_start:     './ASSETS/AUDIO/SFX/wave_start.wav',
+      sfx_wave_start:     './ASSETS/AUDIO/SFX/wave_start.mp3',
 
       // --- Enemigos ---
       sfx_enemy_shoot:    './ASSETS/AUDIO/SFX/enemy_shoot.wav',

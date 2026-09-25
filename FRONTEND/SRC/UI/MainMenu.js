@@ -7,6 +7,7 @@ export class MainMenu {
 
     // Elementos DOM
     this.overlay = document.getElementById('main-menu-overlay');
+    this.menuPanel = this.overlay ? this.overlay.querySelector('.menu-panel') : null;
     this.mainView = document.getElementById('menu-main-view');
     this.lbView = document.getElementById('menu-leaderboard-view');
     this.settingsView = document.getElementById('menu-settings-view');
@@ -122,6 +123,10 @@ export class MainMenu {
     this.instructionsView.classList.remove('active');
     this.creditsView.classList.remove('active');
     viewToShow.classList.add('active');
+
+    if (this.menuPanel) {
+      this.menuPanel.classList.toggle('menu-panel--wide', viewToShow === this.instructionsView);
+    }
   }
 
   _loadInitialSettings() {

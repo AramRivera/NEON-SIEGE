@@ -303,29 +303,29 @@ export const CONFIG = {
       bgm_arena:          './assets/audio/bgm/arena_theme.mp3',
 
       // --- Jugador ---
-      sfx_shoot:          './assets/audio/sfx/shoot.wav',
-      sfx_dash:           './assets/audio/sfx/dash.wav',
-      sfx_hit:            './assets/audio/sfx/hit.wav',
-      sfx_pickup:         './assets/audio/sfx/pickup.wav',
-      sfx_levelup:        './assets/audio/sfx/levelup.wav',
-      sfx_wave_start:     './assets/audio/sfx/wave_start.wav',
+      sfx_shoot:          './ASSETS/AUDIO/SFX/shoot.wav',
+      sfx_dash:           './ASSETS/AUDIO/SFX/dash.wav',
+      sfx_hit:            './ASSETS/AUDIO/SFX/hit.wav',
+      sfx_pickup:         './ASSETS/AUDIO/SFX/pickup.wav',
+      sfx_levelup:        './ASSETS/AUDIO/SFX/levelup.wav',
+      sfx_wave_start:     './ASSETS/AUDIO/SFX/wave_start.wav',
 
       // --- Enemigos ---
-      sfx_enemy_shoot:    './assets/audio/sfx/enemy_shoot.wav',
-      sfx_enemy_attack:   './assets/audio/sfx/enemy_attack.wav',
-      sfx_enemy_hit:      './assets/audio/sfx/enemy_hit.wav',
-      sfx_enemy_explode:  './assets/audio/sfx/enemy_explode.wav',
-      sfx_tank_charge:    './assets/audio/sfx/tank_charge.wav',
-      sfx_kamikaze_beep:  './assets/audio/sfx/kamikaze_beep.wav',
+      sfx_enemy_shoot:    './ASSETS/AUDIO/SFX/enemy_shoot.wav',
+      sfx_enemy_attack:   './ASSETS/AUDIO/SFX/enemy_attack.wav',
+      sfx_enemy_hit:      './ASSETS/AUDIO/SFX/enemy_hit.wav',
+      sfx_enemy_explode:  './ASSETS/AUDIO/SFX/enemy_explode.wav',
+      sfx_tank_charge:    './ASSETS/AUDIO/SFX/tank_charge.wav',
+      sfx_kamikaze_beep:  './ASSETS/AUDIO/SFX/kamikaze_beep.wav',
 
       // --- Jefes ---
-      sfx_boss_shoot:     './assets/audio/sfx/boss_shoot.wav',
-      sfx_boss_summon:    './assets/audio/sfx/boss_summon.wav',
-      sfx_boss_teleport:  './assets/audio/sfx/boss_teleport.wav',
-      sfx_boss_explode:   './assets/audio/sfx/boss_explode.wav',
+      sfx_boss_shoot:     './ASSETS/AUDIO/SFX/boss_shoot.wav',
+      sfx_boss_summon:    './ASSETS/AUDIO/SFX/boss_summon.wav',
+      sfx_boss_teleport:  './ASSETS/AUDIO/SFX/boss_teleport.wav',
+      sfx_boss_explode:   './ASSETS/AUDIO/SFX/boss_explode.wav',
 
       // --- Genéricos ---
-      sfx_boom:           './assets/audio/sfx/explosion.wav'
+      sfx_boom:           './ASSETS/AUDIO/SFX/explosion.wav'
     }
   }
 };

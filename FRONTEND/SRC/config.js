@@ -246,8 +246,8 @@ export const CONFIG = {
       },
       player_shotgun: {
         src: './assets/characters/player_shotgun.png',
-        frameW: 256,
-        frameH: 204.8,
+        frameW: 64,
+        frameH: 64,
         animations: {
           idle:   { row: 0, frames: 4, speed: 0.18 },
           walk:   { row: 1, frames: 6, speed: 0.10 },
@@ -258,8 +258,8 @@ export const CONFIG = {
       },
       player_energy_beam: {
         src: './assets/characters/player_plasma.png',
-        frameW: 256,
-        frameH: 204.8,
+        frameW: 64,
+        frameH: 64,
         animations: {
           idle:   { row: 0, frames: 4, speed: 0.18 },
           walk:   { row: 1, frames: 6, speed: 0.10 },
@@ -335,7 +335,7 @@ export const CONFIG = {
       boss_tempest: {
         src: './assets/bosses/void_tempest.png',
         frameW: 256,
-        frameH: 204.8,
+        frameH: 256,
         animations: {
           idle:    { row: 0, frames: 4, speed: 0.20 },
           walk:    { row: 1, frames: 6, speed: 0.12 },

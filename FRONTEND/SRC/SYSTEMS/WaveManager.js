@@ -25,14 +25,22 @@ export class WaveManager {
       CONFIG.WAVES.INITIAL_SPAWN_INTERVAL - waveNumber * 0.1
     );
 
-    // ---- AUDIO: anuncio de nueva oleada ----
+        // ---- AUDIO: anuncio de nueva oleada ----
     assetManager.playSound('sfx_wave_start', 0.5);
 
     // ¿Ronda de Jefe? (Cada 5 oleadas)
-    if (waveNumber % CONFIG.WAVES.BOSS_INTERVAL === 0) {
+    const isBossWave = waveNumber % CONFIG.WAVES.BOSS_INTERVAL === 0;
+    if (isBossWave) {
       const bossKind = (waveNumber / CONFIG.WAVES.BOSS_INTERVAL) % 2 === 1 ? 'GOLIATH' : 'TEMPEST';
       this.engine.currentBoss = new Boss(bossKind, waveNumber);
     }
+
+    // ---- BANNER: anuncio visual de la oleada ----
+    this.engine.waveBanner.timer = this.engine.waveBanner.duration;
+    this.engine.waveBanner.isBoss = isBossWave;
+    this.engine.waveBanner.text = isBossWave
+      ? `⚠ OLEADA ${waveNumber} — ¡JEFE! ⚠`
+      : `OLEADA ${waveNumber}`;
   }
 
   getMultipliers() {

@@ -15,6 +15,9 @@ export class MainMenu {
     this.instructionsView = document.getElementById('menu-instructions-view');
     this.creditsView = document.getElementById('menu-credits-view');
 
+    this.splashScreen = document.getElementById('splash-screen');
+    this._splashDismissed = false;
+
     // Botones de acción
     this.btnPlay = document.getElementById('btn-play');
     this.btnLeaderboard = document.getElementById('btn-leaderboard');
@@ -33,6 +36,7 @@ export class MainMenu {
     this.rngVolume = document.getElementById('setting-master-volume');
 
     this._bindEvents();
+    this._bindSplash();
     this._loadInitialSettings();
   }
 
@@ -82,6 +86,33 @@ export class MainMenu {
       this.engine.masterVolume = vol;
       localStorage.setItem('cfg_volume', vol);
     });
+  }
+
+  _bindSplash() {
+    if (!this.splashScreen) return;
+
+    const dismiss = () => {
+      if (this._splashDismissed) return;
+      this._splashDismissed = true;
+
+      this.splashScreen.classList.add('hidden');
+
+      // Forzar desbloqueo de audio con esta interacción
+      try {
+        if (this.engine && this.engine._setupAudioUnlock) {
+          // el engine ya maneja el unlock global; esto solo refuerza
+        }
+      } catch (e) {}
+
+      // Remover del DOM tras la transición
+      setTimeout(() => {
+        if (this.splashScreen) this.splashScreen.style.display = 'none';
+      }, 600);
+    };
+
+    this.splashScreen.addEventListener('click', dismiss);
+    window.addEventListener('keydown', dismiss, { once: true });
+    this.splashScreen.addEventListener('touchstart', dismiss, { once: true });
   }
 
   _switchView(viewToShow) {
@@ -154,6 +185,11 @@ export class MainMenu {
   show() {
     this.overlay.classList.add('active');
     this._switchView(this.mainView);
+
+    // El splash solo aparece en el primer arranque
+    if (this._splashDismissed && this.splashScreen) {
+      this.splashScreen.style.display = 'none';
+    }
   }
 
   hide() {

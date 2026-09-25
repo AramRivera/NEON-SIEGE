@@ -40,9 +40,17 @@ export class Engine {
     this.gameTime = 0;
     this.comboCount = 0;
     this.comboTimer = 0;
-    this.comboMult = 1.0;
+     this.comboMult = 1.0;
 
-        this.waveManager = new WaveManager(this);
+    // ---- Anuncio de oleada (banner) ----
+    this.waveBanner = {
+      timer: 0,        // tiempo restante visible
+      duration: 2.5,   // duración total
+      text: '',
+      isBoss: false
+    };
+
+    this.waveManager = new WaveManager(this);
 
     // ---- MODO DEBUG (F3) ----
     this.debug = new DebugOverlay();
@@ -372,6 +380,11 @@ export class Engine {
 
   update(dt) {
     this.gameTime += dt;
+
+    // ---- Anuncio de oleada: cuenta atrás ----
+    if (this.waveBanner.timer > 0) {
+      this.waveBanner.timer -= dt;
+    }
     this.input.updateWorldCoordinates(this.camera.x, this.camera.y);
 
     this.player.update(dt, this);
@@ -503,10 +516,61 @@ export class Engine {
 
     this.ctx.restore();
 
-    this._drawHUD();
+        this._drawHUD();
+
+    // ---- BANNER de oleada (encima de todo) ----
+    this._drawWaveBanner();
 
     // ---- DEBUG: panel de PANTALLA (encima de todo) ----
     this.debug.render(this.ctx, this);
+  }
+
+  _drawWaveBanner() {
+    const b = this.waveBanner;
+    if (b.timer <= 0) return;
+
+    // Progreso 0→1
+    const t = b.timer / b.duration;
+    // Alpha: aparece rápido, se mantiene, desaparece al final
+    let alpha;
+    if (t > 0.8) alpha = (1 - t) / 0.2;        // fade in (primer 20%)
+    else if (t < 0.25) alpha = t / 0.25;       // fade out (último 25%)
+    else alpha = 1;
+
+    // Pequeño "pop" de escala al aparecer
+    const scale = t > 0.8 ? 0.8 + (1 - t) * 1.0 : 1;
+
+    const cx = this.canvas.width / 2;
+    const cy = this.canvas.height * 0.32;
+
+    this.ctx.save();
+    this.ctx.globalAlpha = alpha;
+    this.ctx.textAlign = 'center';
+    this.ctx.textBaseline = 'middle';
+
+    const color = b.isBoss ? '#ff0055' : '#00f0ff';
+
+    this.ctx.translate(cx, cy);
+    this.ctx.scale(scale, scale);
+
+    // Sombra/glow
+    this.ctx.font = 'bold 44px monospace';
+    this.ctx.shadowBlur = 20;
+    this.ctx.shadowColor = color;
+
+    // Banda de fondo semitransparente
+    this.ctx.fillStyle = 'rgba(0, 0, 0, 0.55)';
+    const textW = this.ctx.measureText(b.text).width;
+    this.ctx.fillRect(-textW / 2 - 24, -34, textW + 48, 68);
+    this.ctx.strokeStyle = color;
+    this.ctx.lineWidth = 2;
+    this.ctx.strokeRect(-textW / 2 - 24, -34, textW + 48, 68);
+
+    // Texto
+    this.ctx.fillStyle = color;
+    this.ctx.fillText(b.text, 0, 0);
+
+    this.ctx.restore();
   }
 
   _drawHUD() {
@@ -531,58 +595,202 @@ export class Engine {
       this.ctx.fillText(`${this.currentBoss.name} [FASE ${this.currentBoss.phase}]`, this.canvas.width / 2, 16);
     }
 
-    // Puntuación y Oleada
+        // ========================================================
+    //  PANEL SUPERIOR: SCORE + OLEADA + COMBO
+    // ========================================================
     this.ctx.textAlign = 'center';
-    this.ctx.font = 'bold 16px monospace';
+    this.ctx.textBaseline = 'middle';
+
+    const cx = this.canvas.width / 2;
+    const topPanelW = 300;
+    const topPanelH = 62;
+    const topPanelX = cx - topPanelW / 2;
+    const topPanelY = 14;
+
+    // Fondo con marco
+    this.ctx.fillStyle = 'rgba(7, 11, 20, 0.8)';
+    this.ctx.fillRect(topPanelX, topPanelY, topPanelW, topPanelH);
+    this.ctx.strokeStyle = 'rgba(0, 240, 255, 0.6)';
+    this.ctx.lineWidth = 1;
+    this.ctx.strokeRect(topPanelX, topPanelY, topPanelW, topPanelH);
+
+    // SCORE (grande, cian)
+    this.ctx.font = 'bold 22px monospace';
     this.ctx.fillStyle = '#00f0ff';
-    this.ctx.fillText(`SCORE: ${this.score}`, this.canvas.width / 2, 55);
+    this.ctx.shadowBlur = 10;
+    this.ctx.shadowColor = '#00f0ff';
+    this.ctx.fillText(`${this.score}`, cx, topPanelY + 22);
+    this.ctx.shadowBlur = 0;
 
-    this.ctx.font = '13px monospace';
+    // Etiqueta SCORE pequeña
+    this.ctx.font = '9px monospace';
+    this.ctx.fillStyle = '#5a6b82';
+    this.ctx.fillText('PUNTUACIÓN', cx - 90, topPanelY + 22);
+
+    // OLEADA (pink)
+    this.ctx.font = 'bold 13px monospace';
     this.ctx.fillStyle = '#ff0077';
-    this.ctx.fillText(`OLEADA: ${this.waveManager.currentWave}`, this.canvas.width / 2, 74);
+    this.ctx.fillText(`OLEADA ${this.waveManager.currentWave}`, cx, topPanelY + 46);
 
+    // Combo (a la derecha, si activo)
     if (this.comboCount > 1) {
       this.ctx.font = 'bold 14px monospace';
       this.ctx.fillStyle = '#ffd700';
-      this.ctx.fillText(`COMBO x${this.comboMult.toFixed(2)}`, this.canvas.width / 2, 94);
+      this.ctx.shadowBlur = 8;
+      this.ctx.shadowColor = '#ffd700';
+      this.ctx.fillText(`x${this.comboMult.toFixed(2)}`, topPanelX + topPanelW + 40, topPanelY + 22);
+      this.ctx.shadowBlur = 0;
+      this.ctx.font = '8px monospace';
+      this.ctx.fillStyle = '#5a6b82';
+      this.ctx.fillText('COMBO', topPanelX + topPanelW + 40, topPanelY + 36);
     }
 
-    // Panel Jugador
+        // ========================================================
+    //  PANEL DE JUGADOR CON RETRATO (abajo-izquierda, estilo Doom)
+    // ========================================================
     this.ctx.textAlign = 'left';
-    const hudX = 24;
-    const hudY = this.canvas.height - 90;
+    this.ctx.textBaseline = 'alphabetic';
 
-    this.ctx.fillStyle = 'rgba(7, 11, 20, 0.8)';
+    const panelX = 20;
+    const panelW = 380;
+    const panelH = 120;
+    const panelY = this.canvas.height - panelH - 20;
+
+    // --- Fondo del panel con marco neón ---
+    this.ctx.fillStyle = 'rgba(7, 11, 20, 0.85)';
+    this.ctx.fillRect(panelX, panelY, panelW, panelH);
     this.ctx.strokeStyle = '#00f0ff';
+    this.ctx.lineWidth = 2;
+    this.ctx.shadowBlur = 12;
+    this.ctx.shadowColor = '#00f0ff';
+    this.ctx.strokeRect(panelX, panelY, panelW, panelH);
+    this.ctx.shadowBlur = 0;
+
+    // Esquinas decorativas (estilo HUD sci-fi)
+    const cLen = 14;
+    this.ctx.strokeStyle = '#00f0ff';
+    this.ctx.lineWidth = 3;
+    // esquina sup-izq
+    this.ctx.beginPath();
+    this.ctx.moveTo(panelX, panelY + cLen); this.ctx.lineTo(panelX, panelY); this.ctx.lineTo(panelX + cLen, panelY);
+    // esquina sup-der
+    this.ctx.moveTo(panelX + panelW - cLen, panelY); this.ctx.lineTo(panelX + panelW, panelY); this.ctx.lineTo(panelX + panelW, panelY + cLen);
+    // esquina inf-izq
+    this.ctx.moveTo(panelX, panelY + panelH - cLen); this.ctx.lineTo(panelX, panelY + panelH); this.ctx.lineTo(panelX + cLen, panelY + panelH);
+    // esquina inf-der
+    this.ctx.moveTo(panelX + panelW - cLen, panelY + panelH); this.ctx.lineTo(panelX + panelW, panelY + panelH); this.ctx.lineTo(panelX + panelW, panelY + panelH - cLen);
+    this.ctx.stroke();
+
+    // --- Retrato del jugador (izquierda) ---
+    const portraitSize = 96;
+    const portraitX = panelX + 12;
+    const portraitY = panelY + 12;
+
+    // Marco del retrato
+    this.ctx.fillStyle = 'rgba(0, 240, 255, 0.08)';
+    this.ctx.fillRect(portraitX, portraitY, portraitSize, portraitSize);
+    this.ctx.strokeStyle = '#00f0ff';
+    this.ctx.lineWidth = 2;
+    this.ctx.strokeRect(portraitX, portraitY, portraitSize, portraitSize);
+
+    const portraitImg = assetManager.getImage('hud_portrait');
+    if (portraitImg) {
+      // Recorta/ajusta la imagen al cuadro del retrato
+      this.ctx.drawImage(portraitImg, portraitX + 2, portraitY + 2, portraitSize - 4, portraitSize - 4);
+    } else {
+      // Fallback: inicial del jugador
+      this.ctx.fillStyle = '#00f0ff';
+      this.ctx.font = 'bold 40px monospace';
+      this.ctx.textAlign = 'center';
+      this.ctx.textBaseline = 'middle';
+      this.ctx.fillText('P', portraitX + portraitSize / 2, portraitY + portraitSize / 2);
+      this.ctx.textAlign = 'left';
+      this.ctx.textBaseline = 'alphabetic';
+    }
+
+    // --- Zona de datos (a la derecha del retrato) ---
+    const dataX = portraitX + portraitSize + 16;
+    const barW = panelW - (dataX - panelX) - 16;
+    const barH = 12;
+
+    // --- Barra de VIDA (con color dinámico según %) ---
+    const hpRatio = p.hp / p.maxHp;
+    const hpColor = hpRatio > 0.5 ? '#00ff66' : (hpRatio > 0.25 ? '#ffd700' : '#ff0055');
+    const hpY = panelY + 14;
+
+    this.ctx.fillStyle = '#333';
+    this.ctx.fillRect(dataX, hpY, barW, barH);
+    this.ctx.fillStyle = hpColor;
+    this.ctx.shadowBlur = 8;
+    this.ctx.shadowColor = hpColor;
+    this.ctx.fillRect(dataX, hpY, barW * hpRatio, barH);
+    this.ctx.shadowBlur = 0;
+    this.ctx.strokeStyle = '#555';
     this.ctx.lineWidth = 1;
-    this.ctx.strokeRect(hudX, hudY, 280, 70);
-    this.ctx.fillRect(hudX, hudY, 280, 70);
+    this.ctx.strokeRect(dataX, hpY, barW, barH);
 
-    // Barra de Vida
-    this.ctx.fillStyle = '#ff0055';
-    this.ctx.fillRect(hudX + 10, hudY + 12, (p.hp / p.maxHp) * 120, 8);
-    this.ctx.strokeStyle = '#333';
-    this.ctx.strokeRect(hudX + 10, hudY + 12, 120, 8);
+    // Segmentos de la barra de vida
+    this.ctx.strokeStyle = 'rgba(0,0,0,0.4)';
+    for (let i = 1; i < 10; i++) {
+      const sx = dataX + (barW / 10) * i;
+      this.ctx.beginPath(); this.ctx.moveTo(sx, hpY); this.ctx.lineTo(sx, hpY + barH); this.ctx.stroke();
+    }
 
-    // Barra de Energía
-    this.ctx.fillStyle = '#00f0ff';
-    this.ctx.fillRect(hudX + 10, hudY + 26, (p.energy / p.maxEnergy) * 120, 8);
-    this.ctx.strokeStyle = '#333';
-    this.ctx.strokeRect(hudX + 10, hudY + 26, 120, 8);
-
-    // Balas y Arma
+    // Texto HP
     this.ctx.font = 'bold 12px monospace';
+    this.ctx.fillStyle = '#ffffff';
+    this.ctx.textAlign = 'right';
+    this.ctx.fillText(`HP ${p.hp.toFixed(0)}`, dataX + barW, hpY - 2);
+    this.ctx.textAlign = 'left';
+
+    // --- Barra de ENERGÍA ---
+    const enRatio = p.energy / p.maxEnergy;
+    const enY = hpY + 20;
+    this.ctx.fillStyle = '#333';
+    this.ctx.fillRect(dataX, enY, barW, barH);
+    this.ctx.fillStyle = '#00f0ff';
+    this.ctx.shadowBlur = 8;
+    this.ctx.shadowColor = '#00f0ff';
+    this.ctx.fillRect(dataX, enY, barW * enRatio, barH);
+    this.ctx.shadowBlur = 0;
+    this.ctx.strokeStyle = '#555';
+    this.ctx.strokeRect(dataX, enY, barW, barH);
+
+    this.ctx.font = 'bold 12px monospace';
+    this.ctx.fillStyle = '#ffffff';
+    this.ctx.textAlign = 'right';
+    this.ctx.fillText(`EN ${p.energy.toFixed(0)}`, dataX + barW, enY - 2);
+    this.ctx.textAlign = 'left';
+
+    // --- Arma + Munición ---
+    const weaponY = enY + 30;
+    this.ctx.font = 'bold 13px monospace';
     this.ctx.fillStyle = w.color;
-    this.ctx.fillText(w.name.toUpperCase(), hudX + 140, hudY + 20);
+    this.ctx.fillText(w.name.toUpperCase(), dataX, weaponY);
 
-    this.ctx.font = 'bold 14px monospace';
+    this.ctx.font = 'bold 13px monospace';
     this.ctx.fillStyle = '#ffd700';
-    const ammoText = p.ammo[p.currentWeaponKey] === Infinity ? 'INF' : `${p.ammo[p.currentWeaponKey]} / ${w.maxAmmo}`;
-    this.ctx.fillText(`AMMO: ${ammoText}`, hudX + 140, hudY + 40);
+    const ammoText = p.ammo[p.currentWeaponKey] === Infinity ? 'INF' : `${p.ammo[p.currentWeaponKey]}/${w.maxAmmo}`;
+    this.ctx.textAlign = 'right';
+    this.ctx.fillText(`AMMO ${ammoText}`, dataX + barW, weaponY);
+    this.ctx.textAlign = 'left';
 
-    this.ctx.font = '10px monospace';
-    this.ctx.fillStyle = '#888';
-    this.ctx.fillText(`LVL: ${p.level}  EXP: ${p.exp}/${p.expNext}`, hudX + 10, hudY + 56);
+    // --- Nivel + EXP ---
+    const lvlY = weaponY + 20;
+    this.ctx.font = '11px monospace';
+    this.ctx.fillStyle = '#c0d0e0';
+    this.ctx.fillText(`LVL ${p.level}`, dataX, lvlY);
+
+    // Barrita de EXP
+    const expX = dataX + 55;
+    const expW = barW - 55;
+    const expH = 6;
+    const expRatio = Math.min(1, p.exp / p.expNext);
+    const expY = lvlY - 7;
+    this.ctx.fillStyle = '#222';
+    this.ctx.fillRect(expX, expY, expW, expH);
+    this.ctx.fillStyle = '#aa00ff';
+    this.ctx.fillRect(expX, expY, expW * expRatio, expH);
 
     this.ctx.restore();
   }

@@ -153,7 +153,7 @@ export const CONFIG = {
     MIN_SPAWN_INTERVAL: 0.35,
     ENEMIES_PER_WAVE_BASE: 12,
     ENEMIES_PER_WAVE_MULT: 1.35,
-    BOSS_INTERVAL: 5,
+    BOSS_INTERVAL: 1,
     STAT_SCALING_PER_WAVE: {
       hp: 1.08,
       damage: 1.06,

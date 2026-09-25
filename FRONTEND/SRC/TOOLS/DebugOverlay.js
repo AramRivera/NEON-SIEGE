@@ -183,12 +183,15 @@ export class DebugOverlay {
     // ============================================================
   //  CAPAS DE MUNDO (se dibujan dentro del translate de la cámara)
   // ============================================================
-  renderWorld(ctx, engine) {
+    renderWorld(ctx, engine) {
     if (!this.enabled) return;
 
     if (CONFIG.DEBUG.DRAW_ARENA_BOUNDS) this._drawArenaBounds(ctx);
+    if (CONFIG.DEBUG.DRAW_PATHS) this._drawAIPaths(ctx, engine);
     if (CONFIG.DEBUG.DRAW_HITBOXES) this._drawHitboxes(ctx, engine);
+    if (CONFIG.DEBUG.DRAW_VECTORS) this._drawVectors(ctx, engine);
     if (CONFIG.DEBUG.DRAW_OBSTACLES) this._drawObstacles(ctx);
+    if (CONFIG.DEBUG.SHOW_ENTITY_LABELS) this._drawEntityLabels(ctx, engine);
   }
 
   // ------------------------------------------------------------
@@ -296,6 +299,151 @@ export class DebugOverlay {
 
     ctx.restore();
   }
+
+    // ------------------------------------------------------------
+  //  Vectores de apuntado y movimiento
+  // ------------------------------------------------------------
+  _drawVectors(ctx, engine) {
+    ctx.save();
+    ctx.globalAlpha = 0.85;
+    ctx.lineWidth = 1.5;
+
+    // --- Jugador: flecha de apuntado (hacia el mouse) ---
+    const p = engine.player;
+    if (p) {
+      this._drawArrow(
+        ctx,
+        p.x, p.y,
+        p.x + Math.cos(p.aimAngle) * (p.radius + 34),
+        p.y + Math.sin(p.aimAngle) * (p.radius + 34),
+        '#00f0ff'
+      );
+    }
+
+    // --- Enemigos: flecha con su ángulo hacia el jugador ---
+    for (let i = 0; i < engine.enemies.length; i++) {
+      const e = engine.enemies[i];
+      this._drawArrow(
+        ctx,
+        e.x, e.y,
+        e.x + Math.cos(e.angle) * (e.radius + 22),
+        e.y + Math.sin(e.angle) * (e.radius + 22),
+        '#ff8800'
+      );
+    }
+
+    // --- Jefe ---
+    if (engine.currentBoss) {
+      const b = engine.currentBoss;
+      if (typeof b.angle === 'number') {
+        this._drawArrow(
+          ctx,
+          b.x, b.y,
+          b.x + Math.cos(b.angle) * (b.radius + 40),
+          b.y + Math.sin(b.angle) * (b.radius + 40),
+          '#ff0077'
+        );
+      }
+    }
+
+    ctx.restore();
+  }
+
+  // ------------------------------------------------------------
+  //  Rutas de IA: línea enemigo -> jugador
+  // ------------------------------------------------------------
+  _drawAIPaths(ctx, engine) {
+    const p = engine.player;
+    if (!p) return;
+
+    ctx.save();
+    ctx.globalAlpha = 0.25;
+    ctx.lineWidth = 1;
+    ctx.strokeStyle = '#ff3333';
+    ctx.setLineDash([3, 4]);
+    ctx.beginPath();
+    for (let i = 0; i < engine.enemies.length; i++) {
+      const e = engine.enemies[i];
+      ctx.moveTo(e.x, e.y);
+      ctx.lineTo(p.x, p.y);
+    }
+    if (engine.currentBoss) {
+      ctx.moveTo(engine.currentBoss.x, engine.currentBoss.y);
+      ctx.lineTo(p.x, p.y);
+    }
+    ctx.stroke();
+    ctx.setLineDash([]);
+    ctx.restore();
+  }
+
+  // ------------------------------------------------------------
+  //  Etiquetas FSM sobre cada enemigo
+  // ------------------------------------------------------------
+  _drawEntityLabels(ctx, engine) {
+    if (!CONFIG.DEBUG.SHOW_ENTITY_LABELS) return;
+
+    ctx.save();
+    ctx.font = 'bold 9px Consolas, monospace';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'bottom';
+
+    const labelColors = {
+      SPAWN: '#888888',
+      SEARCH: '#00f0ff',
+      CHASE: '#ffd700',
+      ATTACK: '#ff3333',
+      RETREAT: '#39ff14',
+      DEAD: '#555555'
+    };
+
+    for (let i = 0; i < engine.enemies.length; i++) {
+      const e = engine.enemies[i];
+      const txt = `${e.state}`;
+      const y = e.y - e.radius - 6;
+
+      // Sombra para legibilidad
+      ctx.fillStyle = 'rgba(0,0,0,0.7)';
+      ctx.fillText(txt, e.x + 1, y + 1);
+
+      // Texto del estado
+      ctx.fillStyle = labelColors[e.state] || '#ffffff';
+      ctx.fillText(txt, e.x, y);
+    }
+
+    ctx.restore();
+  }
+
+  // ------------------------------------------------------------
+  //  Utilidad: dibuja una flecha desde (x1,y1) a (x2,y2)
+  // ------------------------------------------------------------
+  _drawArrow(ctx, x1, y1, x2, y2, color) {
+    const angle = Math.atan2(y2 - y1, x2 - x1);
+    const headLen = 7;
+
+    ctx.strokeStyle = color;
+    ctx.fillStyle = color;
+
+    // Línea
+    ctx.beginPath();
+    ctx.moveTo(x1, y1);
+    ctx.lineTo(x2, y2);
+    ctx.stroke();
+
+    // Cabeza de flecha
+    ctx.beginPath();
+    ctx.moveTo(x2, y2);
+    ctx.lineTo(
+      x2 - headLen * Math.cos(angle - Math.PI / 6),
+      y2 - headLen * Math.sin(angle - Math.PI / 6)
+    );
+    ctx.lineTo(
+      x2 - headLen * Math.cos(angle + Math.PI / 6),
+      y2 - headLen * Math.sin(angle + Math.PI / 6)
+    );
+    ctx.closePath();
+    ctx.fill();
+  }
+
 
   // ------------------------------------------------------------
   //  Obstáculos como rectángulos AABB

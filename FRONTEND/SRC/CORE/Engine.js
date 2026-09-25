@@ -11,6 +11,7 @@ import { ApiService } from '../SYSTEMS/ApiService.js';
 import { Projectile } from '../ENTITIES/Projectile.js';
 import { Player } from '../ENTITIES/Player.js';
 import { Pickup } from '../ENTITIES/Pickup.js';
+import { DebugOverlay } from '../TOOLS/DebugOverlay.js';
 
 export class Engine {
   constructor(canvas) {
@@ -41,7 +42,16 @@ export class Engine {
     this.comboTimer = 0;
     this.comboMult = 1.0;
 
-    this.waveManager = new WaveManager(this);
+        this.waveManager = new WaveManager(this);
+
+    // ---- MODO DEBUG (F3) ----
+    this.debug = new DebugOverlay();
+    window.addEventListener('keydown', (e) => {
+      if (e.code === CONFIG.DEBUG.KEY && !e.repeat) {
+        e.preventDefault(); // evita búsqueda de Firefox / dev-tools
+        this.debug.toggle();
+      }
+    });
 
     this.lastTime = performance.now();
     this.isPaused = false;
@@ -343,11 +353,14 @@ export class Engine {
     });
   }
 
-  _loop(currentTime) {
+    _loop(currentTime) {
     if (!this.isRunning) return;
 
     const dt = Math.min(0.1, (currentTime - this.lastTime) / 1000);
     this.lastTime = currentTime;
+
+    // ---- DEBUG: métricas de rendimiento (solo si activo) ----
+    this.debug.update(dt);
 
     if (!this.isPaused && !this.isGameOver) {
       this.update(dt);
@@ -485,9 +498,15 @@ export class Engine {
     this.player.draw(this.ctx);
     this.particleSystem.draw(this.ctx);
 
+    // ---- DEBUG FASE 2: capa de MUNDO (dentro del translate de la cámara) ----
+    this.debug.renderWorldLayer(this.ctx, this);
+
     this.ctx.restore();
 
     this._drawHUD();
+
+    // ---- DEBUG: panel de PANTALLA (encima de todo) ----
+    this.debug.render(this.ctx, this);
   }
 
   _drawHUD() {

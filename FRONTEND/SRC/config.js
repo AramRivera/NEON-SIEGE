@@ -170,6 +170,20 @@ export const CONFIG = {
     MAX_MULTIPLIER: 5.0
   },
 
+    // Modo Debug (F3)
+    DEBUG: {
+    KEY: 'F3',
+    DRAW_GRID: true,        // Cuadrícula del SpatialGrid (con heatmap)
+    DRAW_HITBOXES: true,    // Círculos de colisión
+    DRAW_ARENA_BOUNDS: true,// Borde jugable real
+    DRAW_VECTORS: true,     // Ángulos y dirección
+    DRAW_PATHS: true,       // Líneas de IA al jugador
+    DRAW_MAGNET: true,      // Radio de magnetismo del jugador
+    DRAW_OBSTACLES: true,   // <-- AÑADIR: rectángulos de obstáculos
+    SHOW_HUD: true,         // Panel de estadísticas
+    SHOW_ENTITY_LABELS: true
+  },
+
   // Capacidad de Object Pools
   POOLS: {
     PLAYER_BULLETS: 400,
@@ -266,6 +280,7 @@ export const CONFIG = {
           attack: { row: 1, frames: 3, speed: 0.12 }
         }
       },
+      //ya
       enemy_kamikaze: {
         src: './assets/enemies/kamikaze.png',
         frameW: 48,

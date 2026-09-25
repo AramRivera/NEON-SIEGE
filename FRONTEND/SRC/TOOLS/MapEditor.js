@@ -694,21 +694,6 @@ class MapEditor {
       }
     }
 
-    // 3. Muros
-    for (let r = 0; r < this.rows; r++) {
-      for (let c = 0; c < this.cols; c++) {
-        const wallId = this.wallLayer[r * this.cols + c];
-        if (wallId) {
-          const wallMeta = PALETTE.find(p => p.id === wallId) || PALETTE[2];
-          this.ctx.fillStyle = wallMeta.color;
-          this.ctx.fillRect(c * TILE_SIZE, r * TILE_SIZE, TILE_SIZE, TILE_SIZE);
-          this.ctx.strokeStyle = 'rgba(255,255,255,0.6)';
-          this.ctx.lineWidth = 2 / z;
-          this.ctx.strokeRect(c * TILE_SIZE + 2, r * TILE_SIZE + 2, TILE_SIZE - 4, TILE_SIZE - 4);
-        }
-      }
-    }
-
     // 4. Portales enemigos
     for (const s of this.enemySpawners) {
       this.ctx.fillStyle = '#ffaa00';

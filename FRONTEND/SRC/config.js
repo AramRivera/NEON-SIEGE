@@ -13,12 +13,24 @@ export const CONFIG = {
     HEIGHT: 1800,
     GRID_CELL_SIZE: 120, // Resolución del Spatial Hash Grid
     SHOW_DEBUG_GRID: false, // <-- En false para gráficos inmersivos limpios
+    // Cover en L + pasillos; plaza central libre para el spawn
     OBSTACLES: [
-      { x: 450, y: 450, w: 150, h: 150 },
-      { x: 1800, y: 450, w: 150, h: 150 },
-      { x: 1100, y: 820, w: 200, h: 160 },
-      { x: 500, y: 1250, w: 160, h: 160 },
-      { x: 1750, y: 1250, w: 160, h: 160 }
+      { x: 256, y: 256, w: 384, h: 64 },
+      { x: 256, y: 256, w: 64, h: 320 },
+      { x: 1760, y: 256, w: 384, h: 64 },
+      { x: 2080, y: 256, w: 64, h: 320 },
+      { x: 256, y: 1480, w: 384, h: 64 },
+      { x: 256, y: 1224, w: 64, h: 320 },
+      { x: 1760, y: 1480, w: 384, h: 64 },
+      { x: 2080, y: 1224, w: 64, h: 320 },
+      { x: 720, y: 704, w: 64, h: 256 },
+      { x: 1616, y: 704, w: 64, h: 256 },
+      { x: 1000, y: 400, w: 80, h: 80 },
+      { x: 1320, y: 400, w: 80, h: 80 },
+      { x: 1000, y: 1320, w: 80, h: 80 },
+      { x: 1320, y: 1320, w: 80, h: 80 },
+      { x: 640, y: 860, w: 96, h: 96 },
+      { x: 1664, y: 860, w: 96, h: 96 }
     ]
   },
 

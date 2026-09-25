@@ -12,6 +12,7 @@ import { Projectile } from '../ENTITIES/Projectile.js';
 import { Player } from '../ENTITIES/Player.js';
 import { Pickup } from '../ENTITIES/Pickup.js';
 import { DebugOverlay } from '../TOOLS/DebugOverlay.js';
+import { ArenaRenderer } from '../SYSTEMS/ArenaRenderer.js';
 
 export class Engine {
   constructor(canvas) {
@@ -26,6 +27,7 @@ export class Engine {
     this.spatialGrid = new SpatialGrid(CONFIG.ARENA.WIDTH, CONFIG.ARENA.HEIGHT, CONFIG.ARENA.GRID_CELL_SIZE);
 
     this.particleSystem = new ParticleSystem();
+    this.arenaRenderer = new ArenaRenderer();
     this.playerBulletsPool = new ObjectPool(() => new Projectile(), CONFIG.POOLS.PLAYER_BULLETS);
     this.enemyBulletsPool = new ObjectPool(() => new Projectile(), CONFIG.POOLS.ENEMY_BULLETS);
 
@@ -485,6 +487,7 @@ export class Engine {
     }
 
     this.particleSystem.update(dt);
+    this.arenaRenderer.updateAmbient(this.particleSystem, dt);
   }
 
   render() {
@@ -495,7 +498,7 @@ export class Engine {
     const camY = Math.floor(this.camera.y || 0);
     this.ctx.translate(-camX, -camY);
 
-    this._drawArena();
+    this.arenaRenderer.drawWorld(this.ctx, this.gameTime, this.camera);
 
     for (let i = 0; i < this.pickups.length; i++) this.pickups[i].draw(this.ctx);
 
@@ -515,6 +518,8 @@ export class Engine {
     this.debug.renderWorldLayer(this.ctx, this);
 
     this.ctx.restore();
+
+    this.arenaRenderer.drawOverlay(this.ctx, this.canvas.width, this.canvas.height, this.gameTime);
 
         this._drawHUD();
 
@@ -832,60 +837,4 @@ export class Engine {
     this.ctx.restore();
   }
 
-  _drawArena() {
-    // 1. DIBUJAR SUELO CON TEXTURA REPETIDA
-    const floorImg = assetManager.getImage('tile_floor');
-    if (floorImg) {
-      const pattern = this.ctx.createPattern(floorImg, 'repeat');
-      this.ctx.fillStyle = pattern;
-      this.ctx.fillRect(0, 0, CONFIG.ARENA.WIDTH, CONFIG.ARENA.HEIGHT);
-    } else {
-      // Color base de respaldo si no hay imagen de piso
-      this.ctx.fillStyle = '#060913';
-      this.ctx.fillRect(0, 0, CONFIG.ARENA.WIDTH, CONFIG.ARENA.HEIGHT);
-    }
-
-    // 2. Cuadrícula de depuración (opcional)
-    if (CONFIG.ARENA.SHOW_DEBUG_GRID) {
-      this.ctx.strokeStyle = 'rgba(0, 240, 255, 0.08)';
-      this.ctx.lineWidth = 1;
-      const step = CONFIG.ARENA.GRID_CELL_SIZE;
-      for (let x = 0; x <= CONFIG.ARENA.WIDTH; x += step) {
-        this.ctx.beginPath(); this.ctx.moveTo(x, 0); this.ctx.lineTo(x, CONFIG.ARENA.HEIGHT); this.ctx.stroke();
-      }
-      for (let y = 0; y <= CONFIG.ARENA.HEIGHT; y += step) {
-        this.ctx.beginPath(); this.ctx.moveTo(0, y); this.ctx.lineTo(CONFIG.ARENA.WIDTH, y); this.ctx.stroke();
-      }
-    }
-
-    // 3. Bordes exteriores luminosos de la arena
-    this.ctx.save();
-    this.ctx.strokeStyle = '#00f0ff';
-    this.ctx.lineWidth = 4;
-    this.ctx.shadowBlur = 18;
-    this.ctx.shadowColor = '#00f0ff';
-    this.ctx.strokeRect(0, 0, CONFIG.ARENA.WIDTH, CONFIG.ARENA.HEIGHT);
-    this.ctx.restore();
-
-    // 4. Obstáculos con textura o bisel
-    const boxImg = assetManager.getImage('obstacle_box');
-    for (const obs of CONFIG.ARENA.OBSTACLES) {
-      if (boxImg) {
-        this.ctx.drawImage(boxImg, obs.x, obs.y, obs.w, obs.h);
-      } else {
-        this.ctx.fillStyle = '#101726';
-        this.ctx.fillRect(obs.x, obs.y, obs.w, obs.h);
-        this.ctx.strokeStyle = '#1e304f';
-        this.ctx.lineWidth = 2;
-        this.ctx.strokeRect(obs.x, obs.y, obs.w, obs.h);
-
-        this.ctx.fillStyle = '#00f0ff';
-        const cSize = 6;
-        this.ctx.fillRect(obs.x, obs.y, cSize, cSize);
-        this.ctx.fillRect(obs.x + obs.w - cSize, obs.y, cSize, cSize);
-        this.ctx.fillRect(obs.x, obs.y + obs.h - cSize, cSize, cSize);
-        this.ctx.fillRect(obs.x + obs.w - cSize, obs.y + obs.h - cSize, cSize, cSize);
-      }
-    }
-  }
 }
